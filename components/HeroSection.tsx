@@ -14,8 +14,26 @@ type HeroSectionProps = {
   onDotClick: (i: number) => void;
 };
 
-export default function HeroSection({ heroMovies, heroIndex, fade, onDotClick }: HeroSectionProps) {
+ export default function HeroSection({ heroMovies = [], heroIndex, fade, onDotClick }: HeroSectionProps) {
   const currentHero = heroMovies[heroIndex];
+  
+  if (!currentHero) return (
+    <div className="relative w-full overflow-hidden bg-[#080a0f]" style={{ height: "520px" }}>
+      <div className="relative z-10 h-full max-w-[1400px] mx-auto px-10 flex flex-col justify-center">
+        <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-red-500 mb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+          Now Streaming
+        </div>
+        <h1 className="text-7xl font-black tracking-tight leading-none uppercase mb-5">
+          Discover<br />
+          <span className="text-red-500">Great Films</span>
+        </h1>
+        <p className="text-sm text-white/50 max-w-md leading-relaxed mb-4">
+          Jelajahi ribuan film populer, temukan trailer terbaru, dan simpan favoritmu — semuanya dalam satu tempat.
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="relative w-full overflow-hidden" style={{ height: "520px" }}>

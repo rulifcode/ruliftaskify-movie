@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useState } from "react";
 
 type Movie = {
   id: number;
@@ -17,7 +18,40 @@ type MovieGridProps = {
   onSearch: () => void;
 };
 
+const FILMS_PER_PAGE = 18;
+
 export default function MovieGrid({ movies, loading, query, onQueryChange, onSearch }: MovieGridProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(movies.length / FILMS_PER_PAGE);
+  const paginated = movies.slice((currentPage - 1) * FILMS_PER_PAGE, currentPage * FILMS_PER_PAGE);
+
+  // Reset ke halaman 1 kalau query berubah
+  const handleQueryChange = (q: string) => {
+    setCurrentPage(1);
+    onQueryChange(q);
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    onSearch();
+  };
+
+  // Generate dot pages dengan ellipsis
+  const getDots = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+
+    const dots: (number | "...")[] = [];
+    if (currentPage <= 4) {
+      dots.push(1, 2, 3, 4, 5, "...", totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      dots.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      dots.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+    }
+    return dots;
+  };
+
   return (
     <>
       {/* Section header + search */}
@@ -40,14 +74,14 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
             </svg>
             <input
               value={query}
-              onChange={e => onQueryChange(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && onSearch()}
+              onChange={e => handleQueryChange(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSearch()}
               placeholder="Search movies..."
               className="w-64 h-10 bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 text-sm text-white placeholder-white/30 outline-none focus:border-red-500/50 transition-all"
             />
           </div>
           <button
-            onClick={onSearch}
+            onClick={handleSearch}
             className="h-10 px-5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-wider rounded-xl transition-colors">
             Search
           </button>
@@ -57,7 +91,7 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {loading
-          ? Array.from({ length: 12 }).map((_, i) => (
+          ? Array.from({ length: 18 }).map((_, i) => (
               <div key={i} className="rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] animate-pulse">
                 <div className="aspect-[2/3] bg-white/10" />
                 <div className="p-3 space-y-2">
@@ -66,7 +100,7 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
                 </div>
               </div>
             ))
-          : movies.length === 0
+          : paginated.length === 0
           ? (
               <div className="col-span-full flex flex-col items-center justify-center py-24 text-white/30">
                 <span className="text-5xl mb-4">🔍</span>
@@ -74,7 +108,7 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
                 <p className="text-sm">Try a different keyword</p>
               </div>
             )
-          : movies.map((movie) => (
+          : paginated.map((movie) => (
               <Link key={movie.id} href={`/movie/${movie.id}`}>
                 <div className="group rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] hover:border-red-500/40 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/60 transition-all duration-300 cursor-pointer">
                   <div className="relative aspect-[2/3] overflow-hidden bg-white/10">
@@ -104,6 +138,46 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
             ))
         }
       </div>
+
+      {/* Pagination dots */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1.5 mt-10">
+          {/* Prev */}
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all text-sm">
+            ‹
+          </button>
+
+          {getDots().map((dot, i) =>
+            dot === "..." ? (
+              <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-white/30 text-xs select-none">
+                ···
+              </span>
+            ) : (
+              <button
+                key={dot}
+                onClick={() => setCurrentPage(dot as number)}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all
+                  ${currentPage === dot
+                    ? "bg-red-600 text-white shadow-lg shadow-red-900/40"
+                    : "text-white/40 hover:text-white hover:bg-white/10"
+                  }`}>
+                {dot}
+              </button>
+            )
+          )}
+
+          {/* Next */}
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-all text-sm">
+            ›
+          </button>
+        </div>
+      )}
     </>
   );
 }

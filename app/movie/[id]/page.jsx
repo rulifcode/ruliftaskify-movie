@@ -1,13 +1,23 @@
 import { getMovieDetail } from "@/services/movieService";
-import HeroSection from "@/components/HeroSection";
+import MovieDetailHero from "@/components/MovieDetailHero";
+import Header from "@/components/Header";
 
 export default async function MovieDetail({ params }) {
   const { id } = await params;
   const movie = await getMovieDetail(id);
 
   if (!movie || movie.success === false) {
-    return <div style={{ color: "white", padding: 40 }}>Movie not found.</div>;
+    return (
+      <div className="min-h-screen bg-[#080a0f] flex items-center justify-center">
+        <p className="text-white/50 text-lg">Movie not found.</p>
+      </div>
+    );
   }
 
-  return <HeroSection movie={movie} />;
+  return (
+    <div className="min-h-screen bg-[#080a0f]">
+      <Header />
+      <MovieDetailHero movie={movie} />
+    </div>
+  );
 }
