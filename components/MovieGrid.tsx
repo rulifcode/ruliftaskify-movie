@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { useState } from "react";
 
 type Movie = {
@@ -16,17 +15,18 @@ type MovieGridProps = {
   query: string;
   onQueryChange: (q: string) => void;
   onSearch: () => void;
+  onMovieClick: (movie: Movie) => void; // ← ditambahkan
 };
 
 const FILMS_PER_PAGE = 18;
 
-export default function MovieGrid({ movies, loading, query, onQueryChange, onSearch }: MovieGridProps) {
+export default function MovieGrid({ movies, loading, query, onQueryChange, onSearch, onMovieClick }: MovieGridProps) {
+  if (movies.length === 0) return null;
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.ceil(movies.length / FILMS_PER_PAGE);
   const paginated = movies.slice((currentPage - 1) * FILMS_PER_PAGE, currentPage * FILMS_PER_PAGE);
 
-  // Reset ke halaman 1 kalau query berubah
   const handleQueryChange = (q: string) => {
     setCurrentPage(1);
     onQueryChange(q);
@@ -37,7 +37,6 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
     onSearch();
   };
 
-  // Generate dot pages dengan ellipsis
   const getDots = () => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
 
@@ -92,24 +91,25 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {loading
           ? Array.from({ length: 18 }).map((_, i) => (
-              <div key={i} className="rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] animate-pulse">
-                <div className="aspect-[2/3] bg-white/10" />
-                <div className="p-3 space-y-2">
-                  <div className="h-3 bg-white/10 rounded w-4/5" />
-                  <div className="h-2.5 bg-white/10 rounded w-1/2" />
-                </div>
+            <div key={i} className="rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] animate-pulse">
+              <div className="aspect-[2/3] bg-white/10" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 bg-white/10 rounded w-4/5" />
+                <div className="h-2.5 bg-white/10 rounded w-1/2" />
               </div>
-            ))
+            </div>
+          ))
           : paginated.length === 0
-          ? (
+            ? (
               <div className="col-span-full flex flex-col items-center justify-center py-24 text-white/30">
                 <span className="text-5xl mb-4">🔍</span>
                 <h3 className="text-lg font-semibold text-white/50 mb-1">No movies found</h3>
                 <p className="text-sm">Try a different keyword</p>
               </div>
             )
-          : paginated.map((movie) => (
-              <Link key={movie.id} href={`/movie/${movie.id}`}>
+            : paginated.map((movie) => (
+              // ← Link diganti div + onClick supaya modal bisa terbuka
+              <div key={movie.id} onClick={() => onMovieClick(movie)}>
                 <div className="group rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] hover:border-red-500/40 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/60 transition-all duration-300 cursor-pointer">
                   <div className="relative aspect-[2/3] overflow-hidden bg-white/10">
                     <img
@@ -119,7 +119,11 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
                       <div className="flex items-center gap-1.5 text-xs font-bold">
-                        <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px]">▶</div>
+                        <div className="w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </div>
                         Details
                       </div>
                     </div>
@@ -128,13 +132,18 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
                     <p className="text-xs font-semibold text-white leading-snug line-clamp-2 mb-1.5">{movie.title}</p>
                     <div className="flex items-center justify-between text-[10px] text-white/40">
                       {movie.vote_average ? (
-                        <span className="text-yellow-400 font-bold">★ {movie.vote_average.toFixed(1)}</span>
+                        <span className="flex items-center gap-1 text-yellow-400 font-bold">
+                          <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          {movie.vote_average.toFixed(1)}
+                        </span>
                       ) : <span />}
                       {movie.release_date && <span>{movie.release_date.slice(0, 4)}</span>}
                     </div>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))
         }
       </div>
@@ -142,7 +151,6 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
       {/* Pagination dots */}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-center gap-1.5 mt-10">
-          {/* Prev */}
           <button
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
@@ -169,7 +177,6 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
             )
           )}
 
-          {/* Next */}
           <button
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}

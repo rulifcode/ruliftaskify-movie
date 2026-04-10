@@ -89,10 +89,6 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-white/[0.07] pt-5 flex items-center justify-between max-[720px]:flex-col max-[720px]:gap-3 max-[720px]:text-center">
           <p className="text-xs text-white/25">© 2025 Rulif Taskify. All rights reserved.</p>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-white/25">Data provided by</span>
-            <span className="bg-[#01b4e4] rounded px-2 py-0.5 text-[10px] font-medium text-white tracking-wide">TMDB</span>
-          </div>
         </div>
 
       </div>

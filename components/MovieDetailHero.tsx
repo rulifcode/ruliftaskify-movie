@@ -1,6 +1,10 @@
 "use client";
-
-import { useState } from "react";
+import WatchSection from "@/components/WatchSection";
+import { useState, useEffect } from "react";
+import TrendingSection from "@/components/TrendingSection";
+import MovieGrid from "@/components/MovieGrid";
+import { getPopularMovies, searchMovies } from "@/services/movieService";
+import Footer from "@/components/Footer";
 
 type Genre = { id: number; name: string };
 type CastMember = {
@@ -91,8 +95,8 @@ function VideoCard({
         background: isActive
           ? "rgba(255,255,255,0.2)"
           : hovering
-          ? "rgba(255,255,255,0.14)"
-          : "rgba(255,255,255,0.08)",
+            ? "rgba(255,255,255,0.14)"
+            : "rgba(255,255,255,0.08)",
         border: "1.5px solid transparent",
         transform: isActive ? "scale(1.06)" : hovering ? "scale(1.03)" : "scale(1)",
         transition: "transform 0.2s ease, background 0.2s ease",
@@ -108,16 +112,14 @@ function VideoCard({
           transition: "opacity 0.2s ease",
         }}
       />
-
-      {/* Overlay */}
       <div
         className="absolute inset-0 flex items-center justify-center"
         style={{
           background: isActive
             ? "rgba(0,0,0,0.15)"
             : hovering
-            ? "rgba(0,0,0,0.22)"
-            : "rgba(0,0,0,0.38)",
+              ? "rgba(0,0,0,0.22)"
+              : "rgba(0,0,0,0.38)",
           transition: "background 0.2s ease",
         }}
       >
@@ -129,8 +131,8 @@ function VideoCard({
             background: isActive
               ? "#ef4444"
               : hovering
-              ? "rgba(255,255,255,0.4)"
-              : "rgba(255,255,255,0.22)",
+                ? "rgba(255,255,255,0.4)"
+                : "rgba(255,255,255,0.22)",
             transition: "all 0.2s ease",
           }}
         >
@@ -139,8 +141,6 @@ function VideoCard({
           </svg>
         </div>
       </div>
-
-      {/* Bottom label on hover */}
       <div
         className="absolute bottom-0 left-0 right-0 px-1.5 py-1"
         style={{
@@ -153,11 +153,49 @@ function VideoCard({
           {v.name}
         </p>
       </div>
-
       <RunningBorder active={animating || isActive} hovering={hovering && !isActive} />
     </button>
   );
 }
+
+function PopularMoviesSection({ onMovieClick }: { onMovieClick: (m: any) => void }) {
+  const [movies, setMovies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    getPopularMovies()
+      .then((data) => setMovies(data?.results ?? []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSearch = async () => {
+    if (!query.trim()) {
+      setLoading(true);
+      getPopularMovies()
+        .then((data) => setMovies(data?.results ?? []))
+        .finally(() => setLoading(false));
+      return;
+    }
+    setLoading(true);
+    searchMovies(query)
+      .then((data) => setMovies(data?.results ?? []))
+      .finally(() => setLoading(false));
+  };
+
+  return (
+    <MovieGrid
+      movies={movies}
+      loading={loading}
+      query={query}
+      onQueryChange={setQuery}
+      onSearch={handleSearch}
+      onMovieClick={onMovieClick}
+    />
+  );
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export default function MovieDetailHero({ movie }: { movie: Movie }) {
   const videos = movie.videos?.results?.filter((v) => v.site === "YouTube") ?? [];
@@ -178,9 +216,8 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
 
   return (
     <div className="relative w-full bg-[#080a0f] text-white font-sans overflow-hidden">
+      {/* ── SECTION 1: HERO ── */}
       <div className="relative w-full" style={{ minHeight: "100vh" }}>
-
-        {/* Backdrop */}
         {(movie.backdrop_path || movie.poster_path) && (
           <img
             src={`https://image.tmdb.org/t/p/original${movie.backdrop_path ?? movie.poster_path}`}
@@ -189,8 +226,6 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
             style={{ opacity: 0.28 }}
           />
         )}
-
-        {/* Gradient */}
         <div
           className="absolute inset-0"
           style={{
@@ -201,17 +236,13 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
             `,
           }}
         />
-
-        {/* Content */}
         <div className="relative z-10 flex flex-col min-h-screen">
           <div className="flex flex-col lg:flex-row items-stretch flex-1">
-
             {/* LEFT: Info */}
             <div
               className="flex flex-col justify-center flex-1"
               style={{ padding: "4rem 3rem 3rem 3.5rem" }}
             >
-              {/* Meta row */}
               <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: "0.75rem" }}>
                 <div
                   className="flex flex-col items-center justify-center bg-red-600 rounded text-white font-black leading-none"
@@ -239,7 +270,6 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
                 ))}
               </div>
 
-              {/* Title */}
               <h1
                 className="font-black tracking-tight uppercase leading-none"
                 style={{ fontSize: "clamp(2.4rem, 5vw, 4.8rem)", marginBottom: "0.6rem" }}
@@ -247,7 +277,6 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
                 {movie.title}
               </h1>
 
-              {/* Overview */}
               <p
                 style={{
                   color: "rgba(255,255,255,0.52)",
@@ -259,7 +288,6 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
                 {movie.overview}
               </p>
 
-              {/* Cast */}
               {cast.length > 0 && (
                 <div style={{ marginBottom: "1.1rem" }}>
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.22)", marginBottom: "6px" }}>
@@ -283,25 +311,12 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
                             {member.name[0]}
                           </div>
                         )}
-                        <div
-                          className="absolute pointer-events-none"
-                          style={{
-                            bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)",
-                            background: "rgba(0,0,0,0.88)", padding: "3px 8px", borderRadius: "4px",
-                            fontSize: "10px", color: "rgba(255,255,255,0.8)", whiteSpace: "nowrap",
-                            opacity: 0, transition: "opacity 0.15s",
-                          }}
-                          // CSS group-hover won't work inline; handled via Tailwind group on parent
-                        >
-                          {member.name}
-                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="flex items-center gap-3 flex-wrap">
                 <button
                   onClick={() => setShowTrailer(true)}
@@ -311,8 +326,20 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
                   <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
                   </svg>
-                  Play Now
+                  Play Trailer
                 </button>
+                <a
+                  href="#watch"
+                  className="flex items-center gap-2 font-bold rounded-full transition-all duration-200 active:scale-95"
+                  style={{ padding: "10px 28px", fontSize: "13px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)", color: "white", textDecoration: "none" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.18)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+                >
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                  </svg>
+                  Watch Full Movie
+                </a>
                 <button
                   className="flex items-center gap-2 font-bold rounded-full transition-all duration-200 active:scale-95"
                   style={{ padding: "10px 28px", fontSize: "13px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)" }}
@@ -327,13 +354,12 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
               </div>
             </div>
 
-            {/* RIGHT: Trailer — tighter, vertically centered */}
+            {/* RIGHT: Trailer */}
             {activeVideo && (
               <div
                 className="flex-shrink-0 flex flex-col justify-center"
                 style={{ width: "44%", padding: "2.5rem 2rem 2.5rem 1rem" }}
               >
-                {/* Player */}
                 <div
                   className="relative rounded-xl overflow-hidden"
                   style={{ boxShadow: "0 0 48px rgba(220,38,38,0.1), 0 8px 40px rgba(0,0,0,0.5)" }}
@@ -358,7 +384,6 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
                   </div>
                 </div>
 
-                {/* Thumbnails */}
                 {videos.length > 1 && (
                   <div className="flex gap-2 flex-wrap" style={{ marginTop: "10px" }}>
                     {videos.slice(0, 5).map((v) => (
@@ -376,6 +401,29 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
           </div>
         </div>
       </div>
+
+      {/* ── SECTION 2: WATCH FULL MOVIE ── */}
+      <div id="watch">
+        <WatchSection movie={movie} />
+      </div>
+
+      {/* ── SECTION 3: TRENDING MOVIES ── */}
+      <div style={{ padding: "3rem 3.5rem" }}>
+        <TrendingSection onMovieClick={(m) => {
+          window.location.href = `/movie/${m.id}`;
+        }} />
+      </div>
+
+      {/* ── SECTION 4: POPULAR MOVIES ── */}
+      <div style={{ padding: "3rem 3.5rem" }}>
+        <PopularMoviesSection onMovieClick={(m) => {
+          // optional: navigate ke detail
+          window.location.href = `/movie/${m.id}`;
+        }} />
+      </div>
+
+      <Footer />
+
 
       {/* Fullscreen modal */}
       {showTrailer && activeVideo && (
@@ -404,9 +452,12 @@ export default function MovieDetailHero({ movie }: { movie: Movie }) {
             >
               ✕
             </button>
+
           </div>
         </div>
+
       )}
     </div>
+
   );
 }

@@ -8,23 +8,47 @@ type Props = {
   badge?: string;
   fetchFn: () => Promise<{ results: Movie[] }>;
   onMovieClick?: (movie: Movie) => void;
+  activeGenres?: number[];
+  searchQuery?: string;
 };
 
 const PER_PAGE = 18;
 
-export default function GridSection({ title, badge, fetchFn, onMovieClick }: Props) {
+export default function GridSection({ title, badge, fetchFn, onMovieClick, activeGenres = [], searchQuery = "" }: Props) {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
 
+  // ✅ Fix 1: tambah fetchFn di dependency agar re-fetch saat sort/tab berubah
   useEffect(() => {
+    setLoading(true);
+    setMovies([]);
     fetchFn()
       .then((data) => setMovies(data.results ?? []))
       .finally(() => setLoading(false));
-  }, []);
+  }, [fetchFn]);
 
-  const totalPages = Math.ceil(movies.length / PER_PAGE);
-  const paginated = movies.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  // Reset ke page 1 setiap kali filter berubah
+  useEffect(() => {
+    setPage(1);
+  }, [activeGenres, searchQuery]);
+
+  // Filter by genre
+  const filteredByGenre =
+    activeGenres.length > 0
+      ? movies.filter((m) => m.genre_ids?.some((id) => activeGenres.includes(id)))
+      : movies;
+
+  // ✅ Fix 2: support both movie.title (movies) dan movie.name (series)
+  const filtered =
+    searchQuery.length > 0
+      ? filteredByGenre.filter((m) =>
+          (m.title ?? m.name)?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : filteredByGenre;
+
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const getDots = () => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -38,6 +62,8 @@ export default function GridSection({ title, badge, fetchFn, onMovieClick }: Pro
     }
     return dots;
   };
+
+  const isEmpty = !loading && filtered.length === 0;
 
   return (
     <section className="mb-14">
@@ -55,57 +81,91 @@ export default function GridSection({ title, badge, fetchFn, onMovieClick }: Pro
         <div className="flex-1 h-px bg-white/5" />
         {!loading && (
           <span className="text-white/30 text-xs font-mono uppercase tracking-widest">
-            #{movies.length} titles
+            #{filtered.length} titles
           </span>
         )}
       </div>
 
+      {/* Empty state */}
+      {isEmpty && (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+            <svg className="w-6 h-6 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+            </svg>
+          </div>
+          <p className="text-white/30 text-sm font-semibold">No titles found</p>
+          <p className="text-white/15 text-xs mt-1">
+            {searchQuery ? `No results for "${searchQuery}"` : "Try selecting a different genre"}
+          </p>
+        </div>
+      )}
+
       {/* Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {loading
-          ? Array.from({ length: 18 }).map((_, i) => (
-              <div key={i} className="rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] animate-pulse">
-                <div className="aspect-[2/3] bg-white/10" />
-                <div className="p-3 space-y-2">
-                  <div className="h-3 bg-white/10 rounded w-4/5" />
-                  <div className="h-2.5 bg-white/10 rounded w-1/2" />
+      {!isEmpty && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {loading
+            ? Array.from({ length: 18 }).map((_, i) => (
+                <div key={i} className="rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] animate-pulse">
+                  <div className="aspect-[2/3] bg-white/10" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-3 bg-white/10 rounded w-4/5" />
+                    <div className="h-2.5 bg-white/10 rounded w-1/2" />
+                  </div>
                 </div>
-              </div>
-            ))
-          : paginated.map((movie) => (
-              <div
-                key={movie.id}
-                onClick={() => onMovieClick?.(movie)}
-                className="group rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] hover:border-red-500/40 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/60 transition-all duration-300 cursor-pointer"
-              >
-                <div className="relative aspect-[2/3] overflow-hidden bg-white/10">
-                  <img
-                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                    alt={movie.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
-                    <div className="flex items-center gap-1.5 text-xs font-bold">
-                      <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px]">▶</div>
-                      Details
+              ))
+            : paginated.map((item) => {
+                // ✅ Fix 3: support both movie fields dan series fields
+                const displayTitle = item.title ?? item.name ?? "Untitled";
+                const displayDate = item.release_date ?? item.first_air_date ?? "";
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => onMovieClick?.(item)}
+                    className="group rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] hover:border-red-500/40 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/60 transition-all duration-300 cursor-pointer"
+                  >
+                    <div className="relative aspect-[2/3] overflow-hidden bg-white/10">
+                      <img
+                        src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                        alt={displayTitle}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
+                        <div className="flex items-center gap-1.5 text-xs font-bold">
+                          <div className="w-6 h-6 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                          Details
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs font-semibold text-white leading-snug line-clamp-2 mb-1.5">
+                        {displayTitle}
+                      </p>
+                      <div className="flex items-center justify-between text-[10px] text-white/40">
+                        {item.vote_average ? (
+                          <span className="flex items-center gap-1 text-yellow-400 font-bold">
+                            <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                            {item.vote_average.toFixed(1)}
+                          </span>
+                        ) : <span />}
+                        {displayDate && <span>{displayDate.slice(0, 4)}</span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="p-3">
-                  <p className="text-xs font-semibold text-white leading-snug line-clamp-2 mb-1.5">{movie.title}</p>
-                  <div className="flex items-center justify-between text-[10px] text-white/40">
-                    {movie.vote_average ? (
-                      <span className="text-yellow-400 font-bold">★ {movie.vote_average.toFixed(1)}</span>
-                    ) : <span />}
-                    {movie.release_date && <span>{movie.release_date.slice(0, 4)}</span>}
-                  </div>
-                </div>
-              </div>
-            ))
-        }
-      </div>
+                );
+              })
+          }
+        </div>
+      )}
 
-      {/* Pagination dots */}
+      {/* Pagination */}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-center gap-1.5 mt-10">
           <button

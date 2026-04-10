@@ -11,16 +11,18 @@ type Props = {
 export default function TrendingSection({ onMovieClick }: Props) {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [didDrag, setDidDrag] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const rowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    getTrendingMovies().then((data) => setMovies(data.results?.slice(0, 12) ?? []));
+    getTrendingMovies().then((data) => setMovies(data?.results?.slice(0, 12) ?? []));
   }, []);
 
   const onMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
+    setDidDrag(false);
     setStartX(e.pageX - (rowRef.current?.offsetLeft ?? 0));
     setScrollLeft(rowRef.current?.scrollLeft ?? 0);
   };
@@ -29,7 +31,9 @@ export default function TrendingSection({ onMovieClick }: Props) {
     if (!isDragging || !rowRef.current) return;
     e.preventDefault();
     const x = e.pageX - rowRef.current.offsetLeft;
-    rowRef.current.scrollLeft = scrollLeft - (x - startX);
+    const walk = x - startX;
+    if (Math.abs(walk) > 5) setDidDrag(true);
+    rowRef.current.scrollLeft = scrollLeft - walk;
   };
 
   const stopDrag = () => setIsDragging(false);
@@ -67,7 +71,9 @@ export default function TrendingSection({ onMovieClick }: Props) {
             key={movie.id}
             movie={movie}
             rank={i + 1}
-            onClick={() => onMovieClick?.(movie)}
+            onClick={() => {
+              if (!didDrag) onMovieClick?.(movie);
+            }}
           />
         ))}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { getMovieDetailFull } from "@/services/movieService";
 import { Movie } from "@/types/movie";
 import CommentSection from "./CommentSection";
@@ -125,7 +126,6 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
                 ) : (
                   <div className="w-full h-full bg-white/5 rounded-t-2xl" />
                 )}
-                {/* Gradient overlay */}
                 <div
                   className="absolute inset-0 rounded-t-2xl"
                   style={{
@@ -133,7 +133,6 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
                       "linear-gradient(to top, #0d0f15 0%, transparent 60%)",
                   }}
                 />
-                {/* Play button */}
                 {trailer && (
                   <button
                     onClick={() => setShowTrailer(true)}
@@ -193,7 +192,6 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
           {/* Content */}
           <div className="p-6">
             <div className="flex gap-5">
-              {/* Poster mini */}
               {poster && (
                 <img
                   src={poster}
@@ -204,21 +202,17 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
               )}
 
               <div className="flex-1 min-w-0">
-                {/* Title */}
                 <h2 className="text-white text-2xl font-bold leading-tight mb-1">
                   {detail?.title ?? movie.title}
                 </h2>
 
-                {/* Tagline */}
                 {detail?.tagline && (
                   <p className="text-white/35 text-sm italic mb-3">
                     "{detail.tagline}"
                   </p>
                 )}
 
-                {/* Meta row */}
                 <div className="flex flex-wrap items-center gap-3 mb-3">
-                  {/* Rating */}
                   <div className="flex items-center gap-1.5">
                     <svg
                       className="w-3.5 h-3.5 text-yellow-400"
@@ -227,10 +221,7 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
                     >
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
-                    <span
-                      className="text-sm font-bold"
-                      style={{ color: ratingColor }}
-                    >
+                    <span className="text-sm font-bold" style={{ color: ratingColor }}>
                       {rating.toFixed(1)}
                     </span>
                     <span className="text-white/25 text-xs">/10</span>
@@ -246,7 +237,6 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
                   )}
                 </div>
 
-                {/* Genres */}
                 {detail?.genres && detail.genres.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {detail.genres.map((g) => (
@@ -267,14 +257,12 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
               </div>
             </div>
 
-            {/* Overview */}
             {detail?.overview && (
               <p className="text-white/60 text-sm leading-relaxed mt-5">
                 {detail.overview}
               </p>
             )}
 
-            {/* Cast */}
             {cast.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-3">
@@ -318,8 +306,21 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
               </div>
             )}
 
-            {/* ✅ Comment Section */}
+            {/* Comment Section */}
             <CommentSection movieId={movie.id} />
+
+            {/* ← Tombol View Full Details */}
+            <div className="mt-6 pt-5 border-t border-white/[0.06]">
+              <Link
+                href={`/movie/${movie.id}`}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold tracking-wider transition-colors bg-red-600 hover:bg-red-500 text-white"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                View Full Details
+              </Link>
+            </div>
           </div>
         </div>
       </div>
