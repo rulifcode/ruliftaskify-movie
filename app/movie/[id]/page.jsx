@@ -3,7 +3,7 @@ import MovieDetailHero from "@/components/MovieDetailHero";
 import Header from "@/components/Header";
 
 export default async function MovieDetail({ params }) {
-  const { id } = params;
+  const { id } = await params;
   const movie = await getMovieDetail(id);
 
   if (!movie || movie.success === false) {

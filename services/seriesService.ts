@@ -1,6 +1,4 @@
 // services/seriesService.ts
-// Mirrors movieService.ts but for TV series (TMDB /tv endpoints)
-
 const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
@@ -41,6 +39,19 @@ export interface SeriesDetails {
   networks: { id: number; name: string; logo_path: string | null }[];
   created_by: { id: number; name: string }[];
   spoken_languages: { name: string; iso_639_1: string }[];
+  backdrop_path?: string;
+  poster_path?: string;
+  vote_average?: number;
+  tagline?: string;
+  videos?: { results: { key: string; type: string; site: string; name: string }[] };
+}
+
+export interface SimilarSeries {
+  id: number;
+  name: string;
+  poster_path: string | null;
+  vote_average: number;
+  first_air_date: string;
 }
 
 async function fetchTMDB<T>(path: string, params = ""): Promise<T> {
@@ -51,7 +62,7 @@ async function fetchTMDB<T>(path: string, params = ""): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// ── List endpoints ──────────────────────────────────────────────────────────
+// ── List endpoints ────────────────────────────────────────────────────────────
 
 export const getPopularSeries = () =>
   fetchTMDB<{ results: any[] }>("/tv/popular");
@@ -68,10 +79,10 @@ export const getUpcomingSeries = () =>
 export const searchSeries = (query: string) =>
   fetchTMDB<{ results: any[] }>("/search/tv", `&query=${encodeURIComponent(query)}`);
 
-// ── Detail endpoints ─────────────────────────────────────────────────────────
+// ── Detail endpoints ──────────────────────────────────────────────────────────
 
 export const getSeriesDetails = (id: number) =>
-  fetchTMDB<SeriesDetails>(`/tv/${id}`);
+  fetchTMDB<SeriesDetails>(`/tv/${id}`, "&append_to_response=videos");
 
 export const getSeasonEpisodes = async (
   seriesId: number,
@@ -81,4 +92,17 @@ export const getSeasonEpisodes = async (
     `/tv/${seriesId}/season/${seasonNumber}`
   );
   return data.episodes ?? [];
+};
+
+// ── Similar / Related ─────────────────────────────────────────────────────────
+
+export const getSimilarSeries = async (
+  seriesId: number
+): Promise<SimilarSeries[]> => {
+  const data = await fetchTMDB<{ results: SimilarSeries[] }>(
+    `/tv/${seriesId}/similar`
+  );
+  return (data.results ?? [])
+    .filter((s) => s.poster_path)
+    .slice(0, 18);
 };
