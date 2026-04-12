@@ -1,9 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, Transition } from "framer-motion";
 
 const variants = {
-  // Arah slide: login dari kiri, register dari kanan
   initial: (direction: number) => ({
     x: direction > 0 ? "100%" : "-100%",
     opacity: 0,
@@ -18,15 +17,15 @@ const variants = {
   }),
 };
 
-const transition = {
+const transition: Transition = {
   type: "tween",
-  ease: [0.25, 0.46, 0.45, 0.94], // ease-out-quart
+  ease: [0.25, 0.46, 0.45, 0.94],
   duration: 0.45,
 };
 
 interface PageTransitionProps {
   children: React.ReactNode;
-  direction?: number; // +1 = slide kanan→kiri (login→register), -1 = kebalikannya
+  direction?: number;
 }
 
 export default function PageTransition({ children, direction = 1 }: PageTransitionProps) {

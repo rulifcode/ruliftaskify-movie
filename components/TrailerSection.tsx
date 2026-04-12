@@ -1,17 +1,5 @@
 import Link from "next/link";
-
-type Movie = {
-  id: number;
-  title: string;
-  poster_path: string;
-  backdrop_path?: string;
-  vote_average?: number;
-  release_date?: string;
-};
-
-type MovieWithTrailer = Movie & {
-  trailerKey: string;
-};
+import { Movie, MovieWithTrailer, getTitle, getReleaseYear } from "@/types/movie";
 
 type TrailerSectionProps = {
   trailerMovies: MovieWithTrailer[];
@@ -34,7 +22,7 @@ export default function TrailerSection({ trailerMovies, activeTrailer, onSelect 
             <iframe
               key={activeTrailer.trailerKey}
               src={`https://www.youtube.com/embed/${activeTrailer.trailerKey}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1`}
-              title={activeTrailer.title}
+              title={getTitle(activeTrailer)}
               allow="autoplay; encrypted-media"
               allowFullScreen
               className="absolute inset-0 w-full h-full border-0"
@@ -42,9 +30,9 @@ export default function TrailerSection({ trailerMovies, activeTrailer, onSelect 
           </div>
           <div className="mt-3 flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-base">{activeTrailer.title}</h3>
+              <h3 className="font-bold text-base">{getTitle(activeTrailer)}</h3>
               <p className="text-xs text-white/40 mt-0.5">
-                {activeTrailer.release_date?.slice(0, 4)} · Official Trailer
+                {getReleaseYear(activeTrailer)} · Official Trailer
               </p>
             </div>
             <Link
@@ -70,7 +58,7 @@ export default function TrailerSection({ trailerMovies, activeTrailer, onSelect 
               <div className="relative w-24 h-14 rounded-lg overflow-hidden shrink-0 bg-white/10">
                 <img
                   src={`https://img.youtube.com/vi/${m.trailerKey}/mqdefault.jpg`}
-                  alt={m.title}
+                  alt={getTitle(m)}
                   className="w-full h-full object-cover"
                 />
                 {activeTrailer.id === m.id && (
@@ -80,8 +68,8 @@ export default function TrailerSection({ trailerMovies, activeTrailer, onSelect 
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-white line-clamp-2 leading-snug">{m.title}</p>
-                <p className="text-[10px] text-white/40 mt-1">{m.release_date?.slice(0, 4)}</p>
+                <p className="text-xs font-semibold text-white line-clamp-2 leading-snug">{getTitle(m)}</p>
+                <p className="text-[10px] text-white/40 mt-1">{getReleaseYear(m)}</p>
               </div>
             </button>
           ))}

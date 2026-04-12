@@ -1,13 +1,5 @@
 import { useState } from "react";
-
-type Movie = {
-  id: number;
-  title: string;
-  poster_path: string;
-  backdrop_path?: string;
-  vote_average?: number;
-  release_date?: string;
-};
+import { Movie, getTitle, getReleaseYear } from "@/types/movie";
 
 type MovieGridProps = {
   movies: Movie[];
@@ -15,7 +7,7 @@ type MovieGridProps = {
   query: string;
   onQueryChange: (q: string) => void;
   onSearch: () => void;
-  onMovieClick: (movie: Movie) => void; // ← ditambahkan
+  onMovieClick: (movie: Movie) => void;
 };
 
 const FILMS_PER_PAGE = 18;
@@ -39,7 +31,6 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
 
   const getDots = () => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
-
     const dots: (number | "...")[] = [];
     if (currentPage <= 4) {
       dots.push(1, 2, 3, 4, 5, "...", totalPages);
@@ -53,7 +44,6 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
 
   return (
     <>
-      {/* Section header + search */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <span className="w-1 h-5 bg-red-500 rounded-full block" />
@@ -87,7 +77,6 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
         </div>
       </div>
 
-      {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {loading
           ? Array.from({ length: 18 }).map((_, i) => (
@@ -108,13 +97,12 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
               </div>
             )
             : paginated.map((movie) => (
-              // ← Link diganti div + onClick supaya modal bisa terbuka
               <div key={movie.id} onClick={() => onMovieClick(movie)}>
                 <div className="group rounded-xl overflow-hidden bg-white/5 border border-white/[0.06] hover:border-red-500/40 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/60 transition-all duration-300 cursor-pointer">
                   <div className="relative aspect-[2/3] overflow-hidden bg-white/10">
                     <img
                       src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                      alt={movie.title}
+                      alt={getTitle(movie)}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
@@ -129,7 +117,7 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
                     </div>
                   </div>
                   <div className="p-3">
-                    <p className="text-xs font-semibold text-white leading-snug line-clamp-2 mb-1.5">{movie.title}</p>
+                    <p className="text-xs font-semibold text-white leading-snug line-clamp-2 mb-1.5">{getTitle(movie)}</p>
                     <div className="flex items-center justify-between text-[10px] text-white/40">
                       {movie.vote_average ? (
                         <span className="flex items-center gap-1 text-yellow-400 font-bold">
@@ -139,7 +127,7 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
                           {movie.vote_average.toFixed(1)}
                         </span>
                       ) : <span />}
-                      {movie.release_date && <span>{movie.release_date.slice(0, 4)}</span>}
+                      {getReleaseYear(movie) && <span>{getReleaseYear(movie)}</span>}
                     </div>
                   </div>
                 </div>
@@ -148,7 +136,6 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
         }
       </div>
 
-      {/* Pagination dots */}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-center gap-1.5 mt-10">
           <button
