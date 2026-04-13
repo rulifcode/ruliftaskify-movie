@@ -44,7 +44,7 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <span className="w-1 h-5 bg-red-500 rounded-full block" />
           <h2 className="text-xl font-black tracking-wider uppercase">
@@ -56,7 +56,7 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
         </div>
 
         <div className="flex gap-2.5">
-          <div className="relative">
+          <div className="relative flex-1 sm:flex-none">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none"
               width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -66,12 +66,12 @@ export default function MovieGrid({ movies, loading, query, onQueryChange, onSea
               onChange={e => handleQueryChange(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSearch()}
               placeholder="Search movies..."
-              className="w-64 h-10 bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 text-sm text-white placeholder-white/30 outline-none focus:border-red-500/50 transition-all"
+              className="w-full sm:w-64 h-10 bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 text-sm text-white placeholder-white/30 outline-none focus:border-red-500/50 transition-all"
             />
           </div>
           <button
             onClick={handleSearch}
-            className="h-10 px-5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-wider rounded-xl transition-colors">
+            className="h-10 px-5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-wider rounded-xl transition-colors shrink-0">
             Search
           </button>
         </div>
