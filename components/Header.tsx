@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -71,7 +72,7 @@ function DropdownMenu({ user, onClose, onSignOut }: { user: User; onClose: () =>
   );
 }
 
-const NAV_ICONS: Record<string, JSX.Element> = {
+const NAV_ICONS: Record<string, React.ReactNode> = {
   Home: (
     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/>
