@@ -38,7 +38,7 @@ export type SeriesForHero = {
   tagline?: string;
 };
 
-// ── Reused from MovieDetailHero ──────────────────────────────────────────────
+// ── Running Border ────────────────────────────────────────────────────────────
 
 function RunningBorder({ active, hovering }: { active: boolean; hovering: boolean }) {
   const show = active || hovering;
@@ -71,15 +71,9 @@ function RunningBorder({ active, hovering }: { active: boolean; hovering: boolea
   );
 }
 
-function VideoCard({
-  v,
-  isActive,
-  onClick,
-}: {
-  v: Video;
-  isActive: boolean;
-  onClick: () => void;
-}) {
+// ── Video Card ────────────────────────────────────────────────────────────────
+
+function VideoCard({ v, isActive, onClick }: { v: Video; isActive: boolean; onClick: () => void }) {
   const [animating, setAnimating] = useState(false);
   const [hovering, setHovering] = useState(false);
 
@@ -99,51 +93,33 @@ function VideoCard({
       onClick={handleClick}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
-      className="relative flex-shrink-0 rounded-lg overflow-hidden transition-all duration-250"
+      className="relative flex-shrink-0 rounded-lg overflow-hidden transition-all duration-200"
       style={{
         width: "calc(20% - 0.4rem)",
-        minWidth: "68px",
+        minWidth: "64px",
         background: isActive
           ? "rgba(255,255,255,0.2)"
-          : hovering
-            ? "rgba(255,255,255,0.14)"
-            : "rgba(255,255,255,0.08)",
+          : hovering ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.08)",
         border: "1.5px solid transparent",
         transform: isActive ? "scale(1.06)" : hovering ? "scale(1.03)" : "scale(1)",
-        transition: "transform 0.2s ease, background 0.2s ease",
       }}
     >
       <img
         src={`https://img.youtube.com/vi/${v.key}/mqdefault.jpg`}
         alt={v.name}
         className="w-full object-cover"
-        style={{
-          height: "48px",
-          opacity: isActive ? 1 : hovering ? 0.9 : 0.7,
-          transition: "opacity 0.2s ease",
-        }}
+        style={{ height: "46px", opacity: isActive ? 1 : hovering ? 0.9 : 0.7, transition: "opacity 0.2s ease" }}
       />
       <div
         className="absolute inset-0 flex items-center justify-center"
-        style={{
-          background: isActive
-            ? "rgba(0,0,0,0.15)"
-            : hovering
-              ? "rgba(0,0,0,0.22)"
-              : "rgba(0,0,0,0.38)",
-          transition: "background 0.2s ease",
-        }}
+        style={{ background: isActive ? "rgba(0,0,0,0.15)" : hovering ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.38)", transition: "background 0.2s ease" }}
       >
         <div
           className="rounded-full flex items-center justify-center"
           style={{
             width: hovering || isActive ? 22 : 18,
             height: hovering || isActive ? 22 : 18,
-            background: isActive
-              ? "#ef4444"
-              : hovering
-                ? "rgba(255,255,255,0.4)"
-                : "rgba(255,255,255,0.22)",
+            background: isActive ? "#ef4444" : hovering ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.22)",
             transition: "all 0.2s ease",
           }}
         >
@@ -169,7 +145,7 @@ function VideoCard({
   );
 }
 
-// ── Episode List (inline, no modal) ─────────────────────────────────────────
+// ── Episode List ──────────────────────────────────────────────────────────────
 
 function EpisodeList({ seriesId, seasons }: { seriesId: number; seasons: Season[] }) {
   const realSeasons = seasons.filter((s) => s.season_number > 0);
@@ -185,15 +161,15 @@ function EpisodeList({ seriesId, seasons }: { seriesId: number; seasons: Season[
   }, [seriesId, activeSeason]);
 
   return (
-    <div style={{ marginTop: "3rem", padding: "0 3.5rem" }}>
-      <div className="flex items-center gap-3" style={{ marginBottom: "1.5rem" }}>
+    <div className="px-4 sm:px-6 lg:px-14 mt-10 sm:mt-14">
+      <div className="flex items-center gap-3 mb-5">
         <span className="inline-block w-1 h-5 rounded-full bg-red-500" />
         <h2 className="text-white text-lg font-semibold tracking-wide">Episodes</h2>
         <div className="flex-1 h-px bg-white/5" />
       </div>
 
       {/* Season tabs */}
-      <div className="flex gap-2 flex-wrap" style={{ marginBottom: "1.5rem" }}>
+      <div className="flex gap-2 flex-wrap mb-5">
         {realSeasons.map((s) => (
           <button
             key={s.season_number}
@@ -212,13 +188,13 @@ function EpisodeList({ seriesId, seasons }: { seriesId: number; seasons: Season[
 
       {/* Episode grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="rounded-xl animate-pulse" style={{ height: 80, background: "rgba(255,255,255,0.05)" }} />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {episodes.map((ep) => (
             <a
               key={ep.id}
@@ -239,10 +215,7 @@ function EpisodeList({ seriesId, seasons }: { seriesId: number; seasons: Season[
               }}
             >
               {/* Thumbnail */}
-              <div
-                className="flex-shrink-0 rounded-lg overflow-hidden relative"
-                style={{ width: 96, height: 58, background: "rgba(255,255,255,0.06)" }}
-              >
+              <div className="flex-shrink-0 rounded-lg overflow-hidden relative" style={{ width: 96, height: 58, background: "rgba(255,255,255,0.06)" }}>
                 {ep.still_path ? (
                   <img
                     src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
@@ -256,7 +229,6 @@ function EpisodeList({ seriesId, seasons }: { seriesId: number; seasons: Season[
                     </svg>
                   </div>
                 )}
-                {/* Play overlay */}
                 <div
                   className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   style={{ background: "rgba(0,0,0,0.5)" }}
@@ -292,12 +264,8 @@ function EpisodeList({ seriesId, seasons }: { seriesId: number; seasons: Season[
                   </p>
                 )}
                 <div className="flex items-center gap-2" style={{ marginTop: 4 }}>
-                  {ep.air_date && (
-                    <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.2)" }}>{ep.air_date}</span>
-                  )}
-                  {ep.runtime && (
-                    <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.2)" }}>{ep.runtime}m</span>
-                  )}
+                  {ep.air_date && <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.2)" }}>{ep.air_date}</span>}
+                  {ep.runtime && <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.2)" }}>{ep.runtime}m</span>}
                 </div>
               </div>
             </a>
@@ -308,7 +276,7 @@ function EpisodeList({ seriesId, seasons }: { seriesId: number; seasons: Season[
   );
 }
 
-// ── Popular Series Section ───────────────────────────────────────────────────
+// ── Popular Series Section ────────────────────────────────────────────────────
 
 function PopularSeriesSection({ onSeriesClick }: { onSeriesClick: (s: any) => void }) {
   const [series, setSeries] = useState<any[]>([]);
@@ -332,7 +300,7 @@ function PopularSeriesSection({ onSeriesClick }: { onSeriesClick: (s: any) => vo
   );
 }
 
-// ── MAIN COMPONENT ───────────────────────────────────────────────────────────
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 
 export default function TvDetailHero({ series }: { series: SeriesForHero }) {
   const videos = series.videos?.results?.filter((v) => v.site === "YouTube") ?? [];
@@ -353,8 +321,11 @@ export default function TvDetailHero({ series }: { series: SeriesForHero }) {
 
   return (
     <div className="relative w-full bg-[#080a0f] text-white font-sans overflow-hidden">
-      {/* ── SECTION 1: HERO ── */}
-      <div className="relative w-full" style={{ minHeight: "100vh" }}>
+
+      {/* ── HERO SECTION ── */}
+      <div className="relative w-full min-h-screen">
+
+        {/* Backdrop */}
         {(series.backdrop_path || series.poster_path) && (
           <img
             src={`https://image.tmdb.org/t/p/original${series.backdrop_path ?? series.poster_path}`}
@@ -368,32 +339,34 @@ export default function TvDetailHero({ series }: { series: SeriesForHero }) {
           className="absolute inset-0"
           style={{
             background: `
-              linear-gradient(to right, #080a0f 28%, transparent 65%),
-              linear-gradient(to top, #080a0f 15%, transparent 55%),
-              linear-gradient(to bottom, #080a0f 4%, transparent 25%)
+              linear-gradient(to right, #080a0f 30%, transparent 70%),
+              linear-gradient(to top, #080a0f 12%, transparent 50%),
+              linear-gradient(to bottom, #080a0f 4%, transparent 22%)
             `,
           }}
         />
+
+        {/* Content */}
         <div className="relative z-10 flex flex-col min-h-screen">
+          {/*
+            Mobile: stack vertikal (info → trailer)
+            Desktop (lg+): side-by-side
+            Trailer di desktop: max 42% lebar, tidak lebih
+          */}
           <div className="flex flex-col lg:flex-row items-stretch flex-1">
+
             {/* LEFT: Info */}
-            <div
-              className="flex flex-col justify-center flex-1"
-              style={{ padding: "4rem 3rem 3rem 3.5rem" }}
-            >
-              {/* Badges row */}
-              <div className="flex items-center gap-2 flex-wrap" style={{ marginBottom: "0.75rem" }}>
-                {/* TV badge */}
-                <div
-                  className="flex flex-col items-center justify-center bg-red-600 rounded text-white font-black leading-none"
-                  style={{ padding: "4px 8px" }}
-                >
-                  <span style={{ fontSize: "8px", letterSpacing: "0.12em", textTransform: "uppercase" }}>TV</span>
-                  <span style={{ fontSize: "13px", lineHeight: 1 }}>Series</span>
+            <div className="flex flex-col justify-center flex-1 px-4 sm:px-8 lg:px-14 pt-24 pb-8 lg:py-20">
+
+              {/* Badges */}
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                <div className="flex flex-col items-center justify-center bg-red-600 rounded text-white font-black leading-none px-2 py-1">
+                  <span className="text-[8px] tracking-widest uppercase">TV</span>
+                  <span className="text-[13px] leading-none">Series</span>
                 </div>
 
                 {ratingPercent > 0 && (
-                  <span className="flex items-center gap-1 font-bold text-green-400" style={{ fontSize: "13px" }}>
+                  <span className="flex items-center gap-1 font-bold text-green-400 text-[13px]">
                     <svg width="13" height="13" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
@@ -402,71 +375,61 @@ export default function TvDetailHero({ series }: { series: SeriesForHero }) {
                 )}
 
                 {year && (
-                  <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px" }}>{year}</span>
+                  <span className="text-white/40 text-[13px]">{year}</span>
                 )}
 
                 {series.number_of_seasons && (
-                  <span style={{ border: "1px solid rgba(255,255,255,0.18)", padding: "1px 8px", borderRadius: "4px", color: "rgba(255,255,255,0.4)", fontSize: "12px" }}>
+                  <span className="border border-white/20 px-2 py-0.5 rounded text-white/40 text-xs">
                     {series.number_of_seasons} Season{series.number_of_seasons > 1 ? "s" : ""}
                   </span>
                 )}
 
                 {series.status && (
-                  <span style={{ border: `1px solid ${statusColor}40`, padding: "1px 8px", borderRadius: "4px", color: statusColor, fontSize: "12px" }}>
+                  <span
+                    className="border px-2 py-0.5 rounded text-xs"
+                    style={{ borderColor: `${statusColor}40`, color: statusColor }}
+                  >
                     {series.status}
                   </span>
                 )}
 
                 {series.genres?.slice(0, 3).map((g) => (
-                  <span key={g.id} style={{ color: "rgba(255,255,255,0.32)", fontSize: "12px" }}>{g.name}</span>
+                  <span key={g.id} className="text-white/30 text-xs">{g.name}</span>
                 ))}
               </div>
 
-              <h1
-                className="font-black tracking-tight uppercase leading-none"
-                style={{ fontSize: "clamp(2.4rem, 5vw, 4.8rem)", marginBottom: "0.6rem" }}
-              >
+              {/* Title */}
+              <h1 className="font-black tracking-tight uppercase leading-none mb-2"
+                style={{ fontSize: "clamp(2rem, 5vw, 4.5rem)" }}>
                 {series.name}
               </h1>
 
+              {/* Tagline */}
               {series.tagline && (
-                <p style={{ color: "rgba(255,255,255,0.3)", fontSize: "13px", fontStyle: "italic", marginBottom: "0.5rem" }}>
-                  "{series.tagline}"
-                </p>
+                <p className="text-white/30 text-sm italic mb-2">"{series.tagline}"</p>
               )}
 
-              <p
-                style={{
-                  color: "rgba(255,255,255,0.52)",
-                  lineHeight: 1.6,
-                  fontSize: "clamp(0.82rem, 1.2vw, 0.95rem)",
-                  marginBottom: "1.1rem",
-                }}
-              >
+              {/* Overview */}
+              <p className="text-white/55 leading-relaxed mb-4 max-w-xl"
+                style={{ fontSize: "clamp(0.82rem, 1.2vw, 0.95rem)" }}>
                 {series.overview}
               </p>
 
               {/* Created by */}
               {series.created_by && series.created_by.length > 0 && (
-                <div style={{ marginBottom: "1.1rem" }}>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.22)", marginBottom: "4px" }}>
-                    Created by
-                  </p>
-                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "13px" }}>
-                    {series.created_by.map((c) => c.name).join(", ")}
-                  </p>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-white/20 mb-1">Created by</p>
+                  <p className="text-white/60 text-sm">{series.created_by.map((c) => c.name).join(", ")}</p>
                 </div>
               )}
 
               {/* Networks */}
               {series.networks && series.networks.length > 0 && (
-                <div style={{ marginBottom: "1.1rem" }}>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.22)", marginBottom: "6px" }}>
-                    Network
-                  </p>
+                <div className="mb-4">
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-white/20 mb-1.5">Network</p>
                   <div className="flex items-center gap-3">
                     {series.networks.map((n) => (
-                      <span key={n.id} style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px" }}>{n.name}</span>
+                      <span key={n.id} className="text-white/50 text-sm">{n.name}</span>
                     ))}
                   </div>
                 </div>
@@ -477,8 +440,8 @@ export default function TvDetailHero({ series }: { series: SeriesForHero }) {
                 {trailer && (
                   <button
                     onClick={() => setShowTrailer(true)}
-                    className="flex items-center gap-2 bg-red-600 hover:bg-red-500 active:scale-95 transition-all duration-200 font-bold rounded-full"
-                    style={{ padding: "10px 28px", fontSize: "13px", boxShadow: "0 4px 20px rgba(220,38,38,0.35)" }}
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-500 active:scale-95 transition-all duration-200 font-bold rounded-full px-6 py-2.5 text-sm"
+                    style={{ boxShadow: "0 4px 20px rgba(220,38,38,0.35)" }}
                   >
                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
@@ -488,8 +451,8 @@ export default function TvDetailHero({ series }: { series: SeriesForHero }) {
                 )}
                 <a
                   href="#episodes"
-                  className="flex items-center gap-2 font-bold rounded-full transition-all duration-200 active:scale-95"
-                  style={{ padding: "10px 28px", fontSize: "13px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)", color: "white", textDecoration: "none" }}
+                  className="flex items-center gap-2 font-bold rounded-full px-6 py-2.5 text-sm transition-all duration-200 active:scale-95 no-underline text-white"
+                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)" }}
                   onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.18)")}
                   onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.1)")}
                 >
@@ -499,8 +462,8 @@ export default function TvDetailHero({ series }: { series: SeriesForHero }) {
                   Watch Episodes
                 </a>
                 <button
-                  className="flex items-center gap-2 font-bold rounded-full transition-all duration-200 active:scale-95"
-                  style={{ padding: "10px 28px", fontSize: "13px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  className="flex items-center gap-2 font-bold rounded-full px-6 py-2.5 text-sm transition-all duration-200 active:scale-95"
+                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)" }}
                   onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.18)")}
                   onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.1)")}
                 >
@@ -512,38 +475,33 @@ export default function TvDetailHero({ series }: { series: SeriesForHero }) {
               </div>
             </div>
 
-            {/* RIGHT: Trailer */}
+            {/* RIGHT: Trailer — hanya tampil di lg ke atas */}
             {activeVideo && (
-              <div
-                className="flex-shrink-0 flex flex-col justify-center"
-                style={{ width: "44%", padding: "2.5rem 2rem 2.5rem 1rem" }}
-              >
+              <div className="hidden lg:flex flex-col justify-center flex-shrink-0 px-6 py-16"
+                style={{ width: "min(44%, 560px)" }}>
                 <div
                   className="relative rounded-xl overflow-hidden"
                   style={{ boxShadow: "0 0 48px rgba(220,38,38,0.1), 0 8px 40px rgba(0,0,0,0.5)" }}
                 >
-                  <div style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
+                  <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
                     <iframe
                       key={activeVideo.key}
                       src={`https://www.youtube.com/embed/${activeVideo.key}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0`}
                       allow="autoplay; encrypted-media"
                       allowFullScreen
-                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+                      className="absolute inset-0 w-full h-full border-none"
                     />
                   </div>
                   <div
-                    style={{
-                      position: "absolute", top: 8, left: 8,
-                      background: "rgba(0,0,0,0.6)", padding: "3px 10px",
-                      borderRadius: "20px", fontSize: "11px", color: "rgba(255,255,255,0.65)",
-                    }}
+                    className="absolute top-2 left-2 rounded-full px-2.5 py-0.5 text-[11px] text-white/65"
+                    style={{ background: "rgba(0,0,0,0.6)" }}
                   >
                     {activeVideo.name}
                   </div>
                 </div>
 
                 {videos.length > 1 && (
-                  <div className="flex gap-2 flex-wrap" style={{ marginTop: "10px" }}>
+                  <div className="flex gap-2 flex-wrap mt-2.5">
                     {videos.slice(0, 5).map((v) => (
                       <VideoCard
                         key={v.key}
@@ -557,59 +515,77 @@ export default function TvDetailHero({ series }: { series: SeriesForHero }) {
               </div>
             )}
           </div>
+
+          {/* Trailer di mobile — muncul di bawah info, di dalam hero */}
+          {activeVideo && (
+            <div className="lg:hidden px-4 sm:px-8 pb-10">
+              <div className="relative rounded-xl overflow-hidden"
+                style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                  <iframe
+                    key={`mobile-${activeVideo.key}`}
+                    src={`https://www.youtube.com/embed/${activeVideo.key}?autoplay=0&mute=1&controls=1&modestbranding=1&rel=0`}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    className="absolute inset-0 w-full h-full border-none"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── SECTION 2: EPISODES ── */}
+      {/* ── EPISODES ── */}
       {realSeasons.length > 0 && (
         <div id="episodes">
           <EpisodeList seriesId={series.id} seasons={series.seasons ?? []} />
         </div>
       )}
 
-      {/* ── SECTION 3: TRENDING ── */}
-      <div style={{ padding: "3rem 3.5rem" }}>
-        <TrendingSection onMovieClick={(m) => {
-          window.location.href = `/movie/${m.id}`;
-        }} />
+      {/* ── TRENDING ── */}
+      <div className="px-4 sm:px-6 lg:px-14 py-10 sm:py-12">
+        <TrendingSection onMovieClick={(m) => { window.location.href = `/movie/${m.id}`; }} />
       </div>
 
-      {/* ── SECTION 4: POPULAR SERIES ── */}
-      <div style={{ padding: "3rem 3.5rem" }}>
-        <PopularSeriesSection onSeriesClick={(s) => {
-          window.location.href = `/tv/${s.id}`;
-        }} />
+      {/* ── POPULAR SERIES ── */}
+      <div className="px-4 sm:px-6 lg:px-14 py-10 sm:py-12">
+        <PopularSeriesSection onSeriesClick={(s) => { window.location.href = `/tv/${s.id}`; }} />
       </div>
 
       <Footer />
 
-      {/* Fullscreen Trailer Modal */}
+      {/* ── FULLSCREEN TRAILER MODAL ── */}
       {showTrailer && activeVideo && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: "rgba(0,0,0,0.95)" }}
           onClick={() => setShowTrailer(false)}
         >
           <div
             className="relative w-full max-w-5xl"
-            style={{ margin: "0 1rem" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="rounded-2xl overflow-hidden" style={{ position: "relative", paddingBottom: "56.25%", height: 0 }}>
+            <div className="rounded-2xl overflow-hidden relative w-full" style={{ paddingBottom: "56.25%" }}>
               <iframe
                 src={`https://www.youtube.com/embed/${activeVideo.key}?autoplay=1&controls=1&rel=0`}
                 allow="autoplay; encrypted-media"
                 allowFullScreen
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+                className="absolute inset-0 w-full h-full border-none"
               />
             </div>
             <button
               onClick={() => setShowTrailer(false)}
               className="absolute flex items-center justify-center transition-colors"
               style={{
-                top: -16, right: -16, width: 36, height: 36,
-                background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: "50%", fontSize: "16px", color: "white", cursor: "pointer",
+                top: -16, right: -16,
+                width: 36, height: 36,
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: "50%",
+                fontSize: "16px",
+                color: "white",
+                cursor: "pointer",
               }}
             >
               ✕
