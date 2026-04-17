@@ -89,13 +89,13 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
     <>
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6"
         onClick={onClose}
         style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)" }}
       >
-        {/* Modal */}
+        {/* Modal — diperkecil: max-w-2xl, max-h-[85vh] */}
         <div
-          className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl"
+          className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl"
           style={{
             background: "#0d0f15",
             border: "1px solid rgba(255,255,255,0.07)",
@@ -139,7 +139,7 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
                     className="absolute inset-0 flex flex-col items-center justify-center gap-3 group"
                   >
                     <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center"
+                      className="w-14 h-14 rounded-full flex items-center justify-center"
                       style={{
                         background: "rgba(255,255,255,0.12)",
                         backdropFilter: "blur(8px)",
@@ -148,14 +148,14 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
                       }}
                     >
                       <svg
-                        className="w-7 h-7 text-white ml-1"
+                        className="w-6 h-6 text-white ml-1"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
                         <path d="M8 5v14l11-7z" />
                       </svg>
                     </div>
-                    <span className="text-white/60 text-sm font-medium tracking-wide">
+                    <span className="text-white/60 text-xs font-medium tracking-wide">
                       Watch Trailer
                     </span>
                   </button>
@@ -163,59 +163,82 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
               </>
             )}
 
-            {/* Close button */}
-            <button
-              onClick={onClose}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center z-10"
-              style={{
-                background: "rgba(0,0,0,0.5)",
-                backdropFilter: "blur(4px)",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
-            >
-              <svg
-                className="w-4 h-4 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+            {/* ── Top-right action buttons ── */}
+            <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+              {/* "View Full Details" button — dipindah ke sini */}
+              <Link
+                href={`/movie/${movie.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-colors"
+                style={{
+                  background: "rgba(220,38,38,0.85)",
+                  backdropFilter: "blur(6px)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "#fff",
+                }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+                {/* Film reel icon */}
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18 3H6a3 3 0 00-3 3v12a3 3 0 003 3h12a3 3 0 003-3V6a3 3 0 00-3-3zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zM9 7h6v10H9V7z" />
+                </svg>
+                <span className="hidden sm:inline">Full Details</span>
+                <span className="sm:hidden">Details</span>
+              </Link>
+
+              {/* Close button */}
+              <button
+                onClick={onClose}
+                className="w-7 h-7 rounded-full flex items-center justify-center"
+                style={{
+                  background: "rgba(0,0,0,0.5)",
+                  backdropFilter: "blur(4px)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                }}
+              >
+                <svg
+                  className="w-3.5 h-3.5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Content */}
-          <div className="p-6">
-            <div className="flex gap-5">
+          <div className="p-4 md:p-5">
+            <div className="flex gap-4">
               {poster && (
                 <img
                   src={poster}
                   alt={movie.title}
                   className="flex-shrink-0 rounded-xl object-cover shadow-lg"
-                  style={{ width: 90, height: 135 }}
+                  style={{ width: 76, height: 114 }}
                 />
               )}
 
               <div className="flex-1 min-w-0">
-                <h2 className="text-white text-2xl font-bold leading-tight mb-1">
+                <h2 className="text-white text-xl font-bold leading-tight mb-1">
                   {detail?.title ?? movie.title}
                 </h2>
 
                 {detail?.tagline && (
-                  <p className="text-white/35 text-sm italic mb-3">
+                  <p className="text-white/35 text-xs italic mb-2">
                     "{detail.tagline}"
                   </p>
                 )}
 
-                <div className="flex flex-wrap items-center gap-3 mb-3">
-                  <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <div className="flex items-center gap-1">
                     <svg
-                      className="w-3.5 h-3.5 text-yellow-400"
+                      className="w-3 h-3 text-yellow-400"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -238,11 +261,11 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
                 </div>
 
                 {detail?.genres && detail.genres.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {detail.genres.map((g) => (
                       <span
                         key={g.id}
-                        className="text-xs px-2.5 py-0.5 rounded-full"
+                        className="text-xs px-2 py-0.5 rounded-full"
                         style={{
                           background: "rgba(255,255,255,0.06)",
                           color: "rgba(255,255,255,0.5)",
@@ -258,25 +281,25 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
             </div>
 
             {detail?.overview && (
-              <p className="text-white/60 text-sm leading-relaxed mt-5">
+              <p className="text-white/60 text-sm leading-relaxed mt-4">
                 {detail.overview}
               </p>
             )}
 
             {cast.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-3">
+              <div className="mt-5">
+                <h3 className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-2.5">
                   Cast
                 </h3>
-                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                <div className="flex gap-2.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
                   {cast.map((member) => (
                     <div
                       key={member.id}
                       className="flex-shrink-0 text-center"
-                      style={{ width: 68 }}
+                      style={{ width: 60 }}
                     >
                       <div
-                        className="w-14 h-14 rounded-full mx-auto overflow-hidden mb-1.5"
+                        className="w-12 h-12 rounded-full mx-auto overflow-hidden mb-1"
                         style={{
                           background: "rgba(255,255,255,0.06)",
                           border: "1px solid rgba(255,255,255,0.08)",
@@ -289,7 +312,7 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white/20 text-lg">
+                          <div className="w-full h-full flex items-center justify-center text-white/20 text-base">
                             {member.name.charAt(0)}
                           </div>
                         )}
@@ -308,19 +331,6 @@ export default function MovieDetailModal({ movie, onClose }: Props) {
 
             {/* Comment Section */}
             <CommentSection movieId={movie.id} />
-
-            {/* ← Tombol View Full Details */}
-            <div className="mt-6 pt-5 border-t border-white/[0.06]">
-              <Link
-                href={`/movie/${movie.id}`}
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold tracking-wider transition-colors bg-red-600 hover:bg-red-500 text-white"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-                View Full Details
-              </Link>
-            </div>
           </div>
         </div>
       </div>
