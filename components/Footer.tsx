@@ -1,17 +1,31 @@
 // components/Footer.tsx
+import Link from "next/link";
+
+const NAV_ITEMS = [
+  { label: "Home", href: "/" },
+  { label: "Movies", href: "/movies" },
+  { label: "Series", href: "/series" },
+  { label: "Upcoming", href: "/upcoming" },
+];
+
+const GENRES = ["Action", "Comedy", "Drama", "Horror", "Sci-Fi"];
+const INFO   = ["About", "Privacy Policy", "Terms of Use", "Contact"];
+
 export default function Footer() {
   return (
-    <footer className="bg-[#0d0f14] border-t border-white/[0.08] pt-12 pb-6 px-10 font-sans text-white">
+    <footer className="bg-[#0d0f14] border-t border-white/[0.08] pt-12 pb-6 px-6 lg:px-10 font-sans text-white">
       <div className="max-w-[1400px] mx-auto">
 
         {/* Grid */}
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-10 max-[720px]:grid-cols-2">
 
-          {/* Brand */}
+          {/* Brand — sinkron dengan Header */}
           <div className="max-[720px]:col-span-2">
-            <h2 className="text-2xl font-medium tracking-tight mb-2">
-              RULIF <span className="text-red-600">TASKIFY</span>
-            </h2>
+            <Link href="/" className="inline-block mb-2">
+              <h2 className="text-xl font-black tracking-widest uppercase text-white">
+                Rulif<span className="text-red-500">Taskify</span>
+              </h2>
+            </Link>
             <p className="text-sm text-white/45 leading-relaxed max-w-[260px] mb-5">
               Discover movies, watch trailers, and explore what's trending — powered by The Movie Database.
             </p>
@@ -41,7 +55,7 @@ export default function Footer() {
                 </svg>
               </a>
 
-              {/* Portfolio / Website */}
+              {/* Portfolio */}
               <a href="https://webrulif.vercel.app/" target="_blank" rel="noopener noreferrer"
                 className="w-[34px] h-[34px] rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
                 <svg className="w-[15px] h-[15px]" viewBox="0 0 24 24" fill="none"
@@ -55,12 +69,16 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Browse */}
+          {/* Browse — sinkron nav items dari Header */}
           <div>
             <h4 className="text-[11px] font-medium tracking-widest uppercase text-white/35 mb-4">Browse</h4>
             <ul className="flex flex-col gap-2.5">
-              {["Popular", "Now Playing", "Top Rated", "Upcoming", "Trending"].map((item) => (
-                <li key={item}><a href="#" className="text-[13px] text-white/55 hover:text-white transition-colors">{item}</a></li>
+              {NAV_ITEMS.map((item) => (
+                <li key={item.label}>
+                  <Link href={item.href} className="text-[13px] text-white/55 hover:text-white transition-colors">
+                    {item.label}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
@@ -69,8 +87,10 @@ export default function Footer() {
           <div>
             <h4 className="text-[11px] font-medium tracking-widest uppercase text-white/35 mb-4">Genres</h4>
             <ul className="flex flex-col gap-2.5">
-              {["Action", "Comedy", "Drama", "Horror", "Sci-Fi"].map((item) => (
-                <li key={item}><a href="#" className="text-[13px] text-white/55 hover:text-white transition-colors">{item}</a></li>
+              {GENRES.map((item) => (
+                <li key={item}>
+                  <a href="#" className="text-[13px] text-white/55 hover:text-white transition-colors">{item}</a>
+                </li>
               ))}
             </ul>
           </div>
@@ -79,8 +99,10 @@ export default function Footer() {
           <div>
             <h4 className="text-[11px] font-medium tracking-widest uppercase text-white/35 mb-4">Info</h4>
             <ul className="flex flex-col gap-2.5">
-              {["About", "Privacy Policy", "Terms of Use", "Contact"].map((item) => (
-                <li key={item}><a href="#" className="text-[13px] text-white/55 hover:text-white transition-colors">{item}</a></li>
+              {INFO.map((item) => (
+                <li key={item}>
+                  <a href="#" className="text-[13px] text-white/55 hover:text-white transition-colors">{item}</a>
+                </li>
               ))}
             </ul>
           </div>
@@ -88,7 +110,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-white/[0.07] pt-5 flex items-center justify-between max-[720px]:flex-col max-[720px]:gap-3 max-[720px]:text-center">
-          <p className="text-xs text-white/25">© 2025 Rulif Taskify. All rights reserved.</p>
+          <p className="text-xs text-white/25">© {new Date().getFullYear()} RulifTaskify. All rights reserved.</p>
         </div>
 
       </div>
