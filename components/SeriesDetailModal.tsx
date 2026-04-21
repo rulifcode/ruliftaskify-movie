@@ -147,7 +147,7 @@ function LoginGateModal({
   );
 }
 
-// ── Paywall Overlay (matching MovieDetailModal style) ─────────────────────────
+// ── Paywall Overlay ───────────────────────────────────────────────────────────
 
 function LoginOverlay() {
   return (
@@ -232,6 +232,7 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
   }, []);
 
   // ── On series open: check / increment view count ──────────────────────────
+  // Konsisten dengan MovieDetailModal: locked skip fetch, badge pakai isLoggedIn
   useEffect(() => {
     if (!movie) {
       setDetail(null);
@@ -246,6 +247,7 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
       const currentCount = getViewCount();
 
       if (currentCount >= MAX_FREE_VIEWS) {
+        // Sama seperti MovieDetailModal: langsung set locked, skip fetch
         setIsLocked(true);
         setLoaded(true);
         return;
@@ -305,6 +307,8 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
 
   const realSeasons = (detail?.seasons ?? []).filter((s) => s.season_number > 0);
 
+  // ── Konsisten dengan MovieDetailModal: viewsLeft pakai isLoggedIn, badge
+  //    muncul saat !isLoggedIn && viewsLeft <= 3 (tanpa cek !isLocked / > 0)
   const viewsUsed = isLoggedIn ? 0 : getViewCount();
   const viewsLeft = Math.max(0, MAX_FREE_VIEWS - viewsUsed);
 
@@ -385,7 +389,7 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
 
               {/* Top-right action buttons */}
               <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
-                {/* Free views remaining badge */}
+                {/* Free views remaining badge — konsisten: !isLoggedIn && viewsLeft <= 3 */}
                 {!isLoggedIn && viewsLeft <= 3 && (
                   <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-yellow-400/35 text-yellow-400 backdrop-blur-md bg-black/55">
                     <svg
