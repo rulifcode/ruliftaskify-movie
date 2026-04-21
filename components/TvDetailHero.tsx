@@ -1,598 +1,449 @@
 "use client";
 
-import WatchSection from "@/components/WatchSection";
-import { useState, useEffect } from "react";
-import TrendingSection from "@/components/TrendingSection";
-import MovieGrid from "@/components/MovieGrid";
-import { getPopularMovies, searchMovies } from "@/services/movieService";
-import Footer from "@/components/Footer";
-import {
-  getSeasonEpisodes,
-  getPopularSeries,
-  Episode,
-  Season,
-} from "@/services/seriesService";
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
+import { getMovieDetailFull } from "@/services/movieService";
+import { Movie } from "@/types/movie";
+import CommentSection from "./CommentSection";
 
-type Genre = { id: number; name: string };
-type Video = { key: string; type: string; site: string; name: string };
-type Network = { id: number; name: string; logo_path: string | null };
-type Creator = { id: number; name: string };
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-export type SeriesForHero = {
+type CastMember = {
   id: number;
   name: string;
-  overview: string;
-  backdrop_path?: string;
-  poster_path?: string;
-  vote_average?: number;
-  first_air_date?: string;
-  last_air_date?: string;
-  status?: string;
-  number_of_seasons?: number;
-  number_of_episodes?: number;
-  genres?: Genre[];
-  seasons?: Season[];
-  networks?: Network[];
-  created_by?: Creator[];
-  videos?: { results: Video[] };
-  tagline?: string;
+  character: string;
+  profile_path: string | null;
 };
 
-// ── Running Border ────────────────────────────────────────────────────────────
+type Video = {
+  key: string;
+  type: string;
+  site: string;
+};
 
-function RunningBorder({ active, hovering }: { active: boolean; hovering: boolean }) {
-  const show = active || hovering;
-  const color = active ? "#ef4444" : "rgba(255,255,255,0.5)";
-  return (
-    <svg
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ borderRadius: "inherit" }}
-    >
-      <rect
-        x="1" y="1"
-        width="calc(100% - 2px)"
-        height="calc(100% - 2px)"
-        rx="7" ry="7"
-        fill="none"
-        stroke={color}
-        strokeWidth={active ? "2" : "1.5"}
-        strokeLinecap="round"
-        style={{
-          strokeDasharray: "600",
-          strokeDashoffset: show ? "0" : "600",
-          transition: show
-            ? "stroke-dashoffset 0.5s cubic-bezier(0.4,0,0.2,1), stroke 0.2s, stroke-width 0.2s"
-            : "stroke-dashoffset 0.3s ease-in, stroke 0.2s",
-          opacity: show ? 1 : 0,
-        }}
-      />
-    </svg>
-  );
+type DetailMovie = Movie & {
+  overview?: string;
+  genres?: { id: number; name: string }[];
+  runtime?: number;
+  tagline?: string;
+  credits?: { cast: CastMember[] };
+  videos?: { results: Video[] };
+};
+
+type Props = {
+  movie: Movie | null;
+  onClose: () => void;
+  isLoggedIn?: boolean;
+};
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const VIEW_COUNT_KEY = "movieModalViewCount";
+const MAX_FREE_VIEWS = 5;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getViewCount(): number {
+  try {
+    return parseInt(localStorage.getItem(VIEW_COUNT_KEY) ?? "0", 10) || 0;
+  } catch {
+    return 0;
+  }
 }
 
-// ── Video Card ────────────────────────────────────────────────────────────────
+function incrementViewCount(): number {
+  try {
+    const next = getViewCount() + 1;
+    localStorage.setItem(VIEW_COUNT_KEY, String(next));
+    return next;
+  } catch {
+    return MAX_FREE_VIEWS + 1;
+  }
+}
 
-function VideoCard({ v, isActive, onClick }: { v: Video; isActive: boolean; onClick: () => void }) {
-  const [animating, setAnimating] = useState(false);
-  const [hovering, setHovering] = useState(false);
+// ─── Login Overlay (centered paywall) ────────────────────────────────────────
 
-  const handleClick = () => {
-    setAnimating(false);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setAnimating(true);
-        setTimeout(() => setAnimating(false), 550);
-      });
-    });
-    onClick();
-  };
-
+function LoginOverlay() {
   return (
-    <button
-      onClick={handleClick}
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-      className="relative flex-shrink-0 rounded-lg overflow-hidden transition-all duration-200"
-      style={{
-        width: "calc(20% - 0.4rem)",
-        minWidth: "64px",
-        background: isActive
-          ? "rgba(255,255,255,0.2)"
-          : hovering ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.08)",
-        border: "1.5px solid transparent",
-        transform: isActive ? "scale(1.06)" : hovering ? "scale(1.03)" : "scale(1)",
-      }}
-    >
-      <img
-        src={`https://img.youtube.com/vi/${v.key}/mqdefault.jpg`}
-        alt={v.name}
-        className="w-full object-cover"
-        style={{ height: "46px", opacity: isActive ? 1 : hovering ? 0.9 : 0.7, transition: "opacity 0.2s ease" }}
-      />
-      <div
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ background: isActive ? "rgba(0,0,0,0.15)" : hovering ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.38)", transition: "background 0.2s ease" }}
-      >
-        <div
-          className="rounded-full flex items-center justify-center"
-          style={{
-            width: hovering || isActive ? 22 : 18,
-            height: hovering || isActive ? 22 : 18,
-            background: isActive ? "#ef4444" : hovering ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.22)",
-            transition: "all 0.2s ease",
-          }}
-        >
-          <svg width="7" height="7" fill="white" viewBox="0 0 20 20">
-            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-[#0d0f15]/90 backdrop-blur-sm">
+      <div className="flex flex-col items-center text-center mx-4 w-full max-w-sm px-8 py-8">
+
+        {/* Lock icon */}
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#f87171"
+            strokeWidth={1.8}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.5 10.5V7a4.5 4.5 0 00-9 0v3.5M5 10.5h14a1 1 0 011 1V20a1 1 0 01-1 1H5a1 1 0 01-1-1v-8.5a1 1 0 011-1z"
+            />
           </svg>
         </div>
-      </div>
-      <div
-        className="absolute bottom-0 left-0 right-0 px-1.5 py-1"
-        style={{
-          background: "linear-gradient(to top, rgba(0,0,0,0.85), transparent)",
-          opacity: hovering || isActive ? 1 : 0,
-          transition: "opacity 0.2s ease",
-        }}
-      >
-        <p style={{ fontSize: "9px", color: "rgba(255,255,255,0.8)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {v.name}
+
+        {/* Text */}
+        <h3 className="mb-1 text-base font-bold text-white">
+          Batas akses gratis tercapai
+        </h3>
+        <p className="mb-6 text-sm leading-relaxed text-white/45">
+          Kamu telah menggunakan {MAX_FREE_VIEWS} akses gratis. Login untuk
+          menjelajahi semua film tanpa batas.
         </p>
-      </div>
-      <RunningBorder active={animating || isActive} hovering={hovering && !isActive} />
-    </button>
-  );
-}
 
-// ── Episode List ──────────────────────────────────────────────────────────────
-
-function EpisodeList({ seriesId, seasons }: { seriesId: number; seasons: Season[] }) {
-  const realSeasons = seasons.filter((s) => s.season_number > 0);
-  const [activeSeason, setActiveSeason] = useState(realSeasons[0]?.season_number ?? 1);
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    getSeasonEpisodes(seriesId, activeSeason)
-      .then(setEpisodes)
-      .finally(() => setLoading(false));
-  }, [seriesId, activeSeason]);
-
-  return (
-    <div className="px-4 sm:px-6 lg:px-14 mt-10 sm:mt-14">
-      <div className="flex items-center gap-3 mb-5">
-        <span className="inline-block w-1 h-5 rounded-full bg-red-500" />
-        <h2 className="text-white text-lg font-semibold tracking-wide">Episodes</h2>
-        <div className="flex-1 h-px bg-white/5" />
-      </div>
-
-      {/* Season tabs */}
-      <div className="flex gap-2 flex-wrap mb-5">
-        {realSeasons.map((s) => (
-          <button
-            key={s.season_number}
-            onClick={() => setActiveSeason(s.season_number)}
-            className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
-            style={{
-              background: activeSeason === s.season_number ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.05)",
-              color: activeSeason === s.season_number ? "#f87171" : "rgba(255,255,255,0.4)",
-              border: `1px solid ${activeSeason === s.season_number ? "rgba(239,68,68,0.35)" : "rgba(255,255,255,0.08)"}`,
-            }}
+        {/* CTA Buttons */}
+        <div className="flex flex-col items-center gap-3 w-full">
+          <Link
+            href="/auth"
+            className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-10 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
-            {s.name}
-          </button>
-        ))}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+            </svg>
+            Login Sekarang
+          </Link>
+          <p className="text-xs text-white/35">
+            Belum punya akun?{" "}
+            <Link href="/auth?tab=register" className="text-white/55 underline underline-offset-2 hover:text-white/80 transition-colors">
+              Daftar gratis
+            </Link>
+          </p>
+        </div>
       </div>
-
-      {/* Episode grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-xl animate-pulse" style={{ height: 80, background: "rgba(255,255,255,0.05)" }} />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {episodes.map((ep) => (
-            <a
-              key={ep.id}
-              href={`/tv/${seriesId}/season/${activeSeason}/episode/${ep.episode_number}`}
-              className="group flex gap-3 rounded-xl p-3 transition-all"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                textDecoration: "none",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)";
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(239,68,68,0.25)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)";
-              }}
-            >
-              {/* Thumbnail */}
-              <div className="flex-shrink-0 rounded-lg overflow-hidden relative" style={{ width: 96, height: 58, background: "rgba(255,255,255,0.06)" }}>
-                {ep.still_path ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
-                    alt={ep.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center" style={{ color: "rgba(255,255,255,0.15)" }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
-                    </svg>
-                  </div>
-                )}
-                <div
-                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ background: "rgba(0,0,0,0.5)" }}
-                >
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(239,68,68,0.9)" }}>
-                    <svg className="ml-0.5" width="10" height="10" fill="white" viewBox="0 0 20 20">
-                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>
-                      E{String(ep.episode_number).padStart(2, "0")}
-                    </span>
-                    <p className="text-white font-semibold leading-tight line-clamp-1" style={{ fontSize: "12px", marginTop: 2 }}>
-                      {ep.name}
-                    </p>
-                  </div>
-                  {ep.vote_average > 0 && (
-                    <span className="flex-shrink-0 text-yellow-400 font-bold" style={{ fontSize: "10px" }}>
-                      ★ {ep.vote_average.toFixed(1)}
-                    </span>
-                  )}
-                </div>
-                {ep.overview && (
-                  <p className="line-clamp-2" style={{ fontSize: "10px", color: "rgba(255,255,255,0.35)", marginTop: 4, lineHeight: 1.5 }}>
-                    {ep.overview}
-                  </p>
-                )}
-                <div className="flex items-center gap-2" style={{ marginTop: 4 }}>
-                  {ep.air_date && <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.2)" }}>{ep.air_date}</span>}
-                  {ep.runtime && <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.2)" }}>{ep.runtime}m</span>}
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
-// ── Popular Series Section ────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
-function PopularSeriesSection({ onSeriesClick }: { onSeriesClick: (s: any) => void }) {
-  const [series, setSeries] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function MovieDetailModal({
+  movie,
+  onClose,
+  isLoggedIn = false,
+}: Props) {
+  const [detail, setDetail] = useState<DetailMovie | null>(null);
+  const [showTrailer, setShowTrailer] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+
+  // ── On movie open: check / increment view count ───────────────────────────
+  useEffect(() => {
+    if (!movie) {
+      setDetail(null);
+      setShowTrailer(false);
+      setLoaded(false);
+      setIsLocked(false);
+      return;
+    }
+
+    if (isLoggedIn) {
+      setIsLocked(false);
+    } else {
+      const currentCount = getViewCount();
+
+      if (currentCount >= MAX_FREE_VIEWS) {
+        setIsLocked(true);
+        setLoaded(true);
+        return;
+      }
+
+      const newCount = incrementViewCount();
+      setIsLocked(newCount > MAX_FREE_VIEWS);
+    }
+
+    setLoaded(false);
+    getMovieDetailFull(movie.id).then((data) => {
+      setDetail(data);
+      setTimeout(() => setLoaded(true), 50);
+    });
+  }, [movie, isLoggedIn]);
+
+  // ── Keyboard close ────────────────────────────────────────────────────────
+  const handleKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
 
   useEffect(() => {
-    getPopularSeries()
-      .then((data) => setSeries(data?.results ?? []))
-      .finally(() => setLoading(false));
-  }, []);
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [handleKey]);
 
-  return (
-    <MovieGrid
-      movies={series}
-      loading={loading}
-      query=""
-      onQueryChange={() => {}}
-      onSearch={() => {}}
-      onMovieClick={onSeriesClick}
-    />
+  if (!movie) return null;
+
+  // ── Derived display values ────────────────────────────────────────────────
+  const trailer = detail?.videos?.results?.find(
+    (v) => v.type === "Trailer" && v.site === "YouTube"
   );
-}
+  const cast = detail?.credits?.cast?.slice(0, 8) ?? [];
+  const backdrop = detail?.backdrop_path
+    ? `https://image.tmdb.org/t/p/w1280${detail.backdrop_path}`
+    : null;
+  const poster = detail?.poster_path
+    ? `https://image.tmdb.org/t/p/w342${detail.poster_path}`
+    : null;
+  const rating = detail?.vote_average ?? 0;
+  const ratingColor =
+    rating >= 7.5 ? "#34d399" : rating >= 6 ? "#facc15" : "#f87171";
+  const runtime = detail?.runtime
+    ? `${Math.floor(detail.runtime / 60)}h ${detail.runtime % 60}m`
+    : null;
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
-
-export default function TvDetailHero({ series }: { series: SeriesForHero }) {
-  const videos = series.videos?.results?.filter((v) => v.site === "YouTube") ?? [];
-  const trailer = videos.find((v) => v.type === "Trailer") ?? videos[0];
-  const [activeVideo, setActiveVideo] = useState<Video | null>(trailer ?? null);
-  const [showTrailer, setShowTrailer] = useState(false);
-
-  const year = series.first_air_date?.split("-")[0];
-  const ratingPercent = Math.round((series.vote_average ?? 0) * 10);
-  const realSeasons = (series.seasons ?? []).filter((s) => s.season_number > 0);
-
-  const statusColor =
-    series.status === "Returning Series"
-      ? "#34d399"
-      : series.status === "Ended"
-        ? "#f87171"
-        : "rgba(255,255,255,0.4)";
+  const viewsUsed = isLoggedIn ? 0 : getViewCount();
+  const viewsLeft = Math.max(0, MAX_FREE_VIEWS - viewsUsed);
 
   return (
-    <div className="relative w-full bg-[#080a0f] text-white font-sans overflow-hidden">
-
-      {/* ── HERO SECTION ── */}
-      <div className="relative w-full min-h-screen">
-
-        {/* Backdrop */}
-        {(series.backdrop_path || series.poster_path) && (
-          <img
-            src={`https://image.tmdb.org/t/p/original${series.backdrop_path ?? series.poster_path}`}
-            alt=""
-            aria-hidden
-            className="absolute inset-0 w-full h-full object-cover object-top"
-            style={{ opacity: 0.28 }}
-          />
-        )}
+    <>
+      {/* Backdrop overlay */}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6"
+        onClick={onClose}
+        style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)" }}
+      >
+        {/* Modal */}
         <div
-          className="absolute inset-0"
+          className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0d0f15]"
           style={{
-            background: `
-              linear-gradient(to right, #080a0f 30%, transparent 70%),
-              linear-gradient(to top, #080a0f 12%, transparent 50%),
-              linear-gradient(to bottom, #080a0f 4%, transparent 22%)
-            `,
+            opacity: loaded ? 1 : 0,
+            transform: loaded ? "translateY(0)" : "translateY(16px)",
+            transition: "opacity 0.35s ease, transform 0.35s ease",
+            scrollbarWidth: "none",
           }}
-        />
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Content wrapper — blurred + non-interactive when locked */}
+          <div
+            style={{
+              filter: isLocked ? "blur(4px) brightness(0.45)" : "none",
+              pointerEvents: isLocked ? "none" : "auto",
+              userSelect: isLocked ? "none" : "auto",
+              transition: "filter 0.3s ease",
+            }}
+          >
+            {/* ── Hero / Trailer Area ──────────────────────────────────── */}
+            <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+              {showTrailer && trailer ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1`}
+                  className="w-full h-full rounded-t-2xl"
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                />
+              ) : (
+                <>
+                  {backdrop ? (
+                    <img
+                      src={backdrop}
+                      alt={movie.title}
+                      className="w-full h-full object-cover rounded-t-2xl"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-white/5 rounded-t-2xl" />
+                  )}
+                  <div
+                    className="absolute inset-0 rounded-t-2xl"
+                    style={{
+                      background:
+                        "linear-gradient(to top, #0d0f15 0%, transparent 60%)",
+                    }}
+                  />
+                  {trailer && (
+                    <button
+                      onClick={() => setShowTrailer(true)}
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-3 group"
+                    >
+                      <div
+                        className="w-14 h-14 rounded-full flex items-center justify-center border border-white/20"
+                        style={{
+                          background: "rgba(255,255,255,0.12)",
+                          backdropFilter: "blur(8px)",
+                          transition: "transform 0.2s ease, background 0.2s ease",
+                        }}
+                      >
+                        <svg
+                          className="w-6 h-6 text-white ml-1"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                      <span className="text-white/60 text-xs font-medium tracking-wide">
+                        Watch Trailer
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col min-h-screen">
-          {/*
-            Mobile: stack vertikal (info → trailer)
-            Desktop (lg+): side-by-side
-            Trailer di desktop: max 42% lebar, tidak lebih
-          */}
-          <div className="flex flex-col lg:flex-row items-stretch flex-1">
-
-            {/* LEFT: Info */}
-            <div className="flex flex-col justify-center flex-1 px-4 sm:px-8 lg:px-14 pt-24 pb-8 lg:py-20">
-
-              {/* Badges */}
-              <div className="flex items-center gap-2 flex-wrap mb-3">
-                <div className="flex flex-col items-center justify-center bg-red-600 rounded text-white font-black leading-none px-2 py-1">
-                  <span className="text-[8px] tracking-widest uppercase">TV</span>
-                  <span className="text-[13px] leading-none">Series</span>
-                </div>
-
-                {ratingPercent > 0 && (
-                  <span className="flex items-center gap-1 font-bold text-green-400 text-[13px]">
-                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              {/* ── Top-right action buttons ── */}
+              <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+                {/* Free views remaining badge */}
+                {!isLoggedIn && viewsLeft <= 3 && (
+                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-yellow-400/35 text-yellow-400 backdrop-blur-md bg-black/55">
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                      />
                     </svg>
-                    {ratingPercent}%
-                  </span>
-                )}
-
-                {year && (
-                  <span className="text-white/40 text-[13px]">{year}</span>
-                )}
-
-                {series.number_of_seasons && (
-                  <span className="border border-white/20 px-2 py-0.5 rounded text-white/40 text-xs">
-                    {series.number_of_seasons} Season{series.number_of_seasons > 1 ? "s" : ""}
-                  </span>
-                )}
-
-                {series.status && (
-                  <span
-                    className="border px-2 py-0.5 rounded text-xs"
-                    style={{ borderColor: `${statusColor}40`, color: statusColor }}
-                  >
-                    {series.status}
-                  </span>
-                )}
-
-                {series.genres?.slice(0, 3).map((g) => (
-                  <span key={g.id} className="text-white/30 text-xs">{g.name}</span>
-                ))}
-              </div>
-
-              {/* Title */}
-              <h1 className="font-black tracking-tight uppercase leading-none mb-2"
-                style={{ fontSize: "clamp(2rem, 5vw, 4.5rem)" }}>
-                {series.name}
-              </h1>
-
-              {/* Tagline */}
-              {series.tagline && (
-                <p className="text-white/30 text-sm italic mb-2">"{series.tagline}"</p>
-              )}
-
-              {/* Overview */}
-              <p className="text-white/55 leading-relaxed mb-4 max-w-xl"
-                style={{ fontSize: "clamp(0.82rem, 1.2vw, 0.95rem)" }}>
-                {series.overview}
-              </p>
-
-              {/* Created by */}
-              {series.created_by && series.created_by.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-white/20 mb-1">Created by</p>
-                  <p className="text-white/60 text-sm">{series.created_by.map((c) => c.name).join(", ")}</p>
-                </div>
-              )}
-
-              {/* Networks */}
-              {series.networks && series.networks.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-[10px] font-bold tracking-widest uppercase text-white/20 mb-1.5">Network</p>
-                  <div className="flex items-center gap-3">
-                    {series.networks.map((n) => (
-                      <span key={n.id} className="text-white/50 text-sm">{n.name}</span>
-                    ))}
+                    {viewsLeft} sisa
                   </div>
-                </div>
-              )}
-
-              {/* CTA Buttons */}
-              <div className="flex items-center gap-3 flex-wrap">
-                {trailer && (
-                  <button
-                    onClick={() => setShowTrailer(true)}
-                    className="flex items-center gap-2 bg-red-600 hover:bg-red-500 active:scale-95 transition-all duration-200 font-bold rounded-full px-6 py-2.5 text-sm"
-                    style={{ boxShadow: "0 4px 20px rgba(220,38,38,0.35)" }}
-                  >
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                    </svg>
-                    Play Trailer
-                  </button>
                 )}
-                <a
-                  href="#episodes"
-                  className="flex items-center gap-2 font-bold rounded-full px-6 py-2.5 text-sm transition-all duration-200 active:scale-95 no-underline text-white"
-                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.18)")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.1)")}
+
+                {/* Full Details button */}
+                <Link
+                  href={`/movie/${movie.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide text-white border border-white/15 backdrop-blur-md transition-opacity hover:opacity-80"
+                  style={{ background: "rgba(220,38,38,0.85)" }}
                 >
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18 3H6a3 3 0 00-3 3v12a3 3 0 003 3h12a3 3 0 003-3V6a3 3 0 00-3-3zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zM9 7h6v10H9V7z" />
                   </svg>
-                  Watch Episodes
-                </a>
+                  <span className="hidden sm:inline">Full Details</span>
+                  <span className="sm:hidden">Details</span>
+                </Link>
+
+                {/* Close button */}
                 <button
-                  className="flex items-center gap-2 font-bold rounded-full px-6 py-2.5 text-sm transition-all duration-200 active:scale-95"
-                  style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)" }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.18)")}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.1)")}
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-full flex items-center justify-center border border-white/10 backdrop-blur-sm bg-black/50"
                 >
-                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  <svg
+                    className="w-3.5 h-3.5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  My Watchlist
                 </button>
               </div>
             </div>
 
-            {/* RIGHT: Trailer — hanya tampil di lg ke atas */}
-            {activeVideo && (
-              <div className="hidden lg:flex flex-col justify-center flex-shrink-0 px-6 py-16"
-                style={{ width: "min(44%, 560px)" }}>
-                <div
-                  className="relative rounded-xl overflow-hidden"
-                  style={{ boxShadow: "0 0 48px rgba(220,38,38,0.1), 0 8px 40px rgba(0,0,0,0.5)" }}
-                >
-                  <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-                    <iframe
-                      key={activeVideo.key}
-                      src={`https://www.youtube.com/embed/${activeVideo.key}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0`}
-                      allow="autoplay; encrypted-media"
-                      allowFullScreen
-                      className="absolute inset-0 w-full h-full border-none"
-                    />
-                  </div>
-                  <div
-                    className="absolute top-2 left-2 rounded-full px-2.5 py-0.5 text-[11px] text-white/65"
-                    style={{ background: "rgba(0,0,0,0.6)" }}
-                  >
-                    {activeVideo.name}
-                  </div>
-                </div>
+            {/* ── Content ─────────────────────────────────────────────── */}
+            <div className="p-4 md:p-5">
+              <div className="flex gap-4">
+                {poster && (
+                  <img
+                    src={poster}
+                    alt={movie.title}
+                    className="flex-shrink-0 rounded-xl object-cover shadow-lg"
+                    style={{ width: 76, height: 114 }}
+                  />
+                )}
 
-                {videos.length > 1 && (
-                  <div className="flex gap-2 flex-wrap mt-2.5">
-                    {videos.slice(0, 5).map((v) => (
-                      <VideoCard
-                        key={v.key}
-                        v={v}
-                        isActive={activeVideo?.key === v.key}
-                        onClick={() => setActiveVideo(v)}
-                      />
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-white text-xl font-bold leading-tight mb-1">
+                    {detail?.title ?? movie.title}
+                  </h2>
+
+                  {detail?.tagline && (
+                    <p className="text-white/35 text-xs italic mb-2">
+                      "{detail.tagline}"
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <div className="flex items-center gap-1">
+                      <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      <span className="text-sm font-bold" style={{ color: ratingColor }}>
+                        {rating.toFixed(1)}
+                      </span>
+                      <span className="text-white/25 text-xs">/10</span>
+                    </div>
+
+                    {movie.release_date && (
+                      <span className="text-white/35 text-xs">
+                        {movie.release_date.slice(0, 4)}
+                      </span>
+                    )}
+                    {runtime && (
+                      <span className="text-white/35 text-xs">{runtime}</span>
+                    )}
+                  </div>
+
+                  {detail?.genres && detail.genres.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {detail.genres.map((g) => (
+                        <span
+                          key={g.id}
+                          className="text-xs px-2 py-0.5 rounded-full border border-white/[0.08] bg-white/[0.06] text-white/50"
+                        >
+                          {g.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {detail?.overview && (
+                <p className="text-white/60 text-sm leading-relaxed mt-4">
+                  {detail.overview}
+                </p>
+              )}
+
+              {cast.length > 0 && (
+                <div className="mt-5">
+                  <h3 className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-2.5">
+                    Cast
+                  </h3>
+                  <div className="flex gap-2.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                    {cast.map((member) => (
+                      <div key={member.id} className="flex-shrink-0 text-center" style={{ width: 60 }}>
+                        <div className="w-12 h-12 rounded-full mx-auto overflow-hidden mb-1 border border-white/[0.08] bg-white/[0.06]">
+                          {member.profile_path ? (
+                            <img
+                              src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
+                              alt={member.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white/20 text-base">
+                              {member.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-white/75 text-xs font-medium leading-tight line-clamp-2">
+                          {member.name}
+                        </p>
+                        <p className="text-white/30 text-xs leading-tight line-clamp-1 mt-0.5">
+                          {member.character}
+                        </p>
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Trailer di mobile — muncul di bawah info, di dalam hero */}
-          {activeVideo && (
-            <div className="lg:hidden px-4 sm:px-8 pb-10">
-              <div className="relative rounded-xl overflow-hidden"
-                style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
-                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-                  <iframe
-                    key={`mobile-${activeVideo.key}`}
-                    src={`https://www.youtube.com/embed/${activeVideo.key}?autoplay=0&mute=1&controls=1&modestbranding=1&rel=0`}
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                    className="absolute inset-0 w-full h-full border-none"
-                  />
                 </div>
-              </div>
+              )}
+
+              {/* Comment Section */}
+              <CommentSection movieId={movie.id} />
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── EPISODES ── */}
-      {realSeasons.length > 0 && (
-        <div id="episodes">
-          <EpisodeList seriesId={series.id} seasons={series.seasons ?? []} />
-        </div>
-      )}
-
-      {/* ── TRENDING ── */}
-      <div className="px-4 sm:px-6 lg:px-14 py-10 sm:py-12">
-        <TrendingSection onMovieClick={(m) => { window.location.href = `/movie/${m.id}`; }} />
-      </div>
-
-      {/* ── POPULAR SERIES ── */}
-      <div className="px-4 sm:px-6 lg:px-14 py-10 sm:py-12">
-        <PopularSeriesSection onSeriesClick={(s) => { window.location.href = `/tv/${s.id}`; }} />
-      </div>
-
-      <Footer />
-
-      {/* ── FULLSCREEN TRAILER MODAL ── */}
-      {showTrailer && activeVideo && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgba(0,0,0,0.95)" }}
-          onClick={() => setShowTrailer(false)}
-        >
-          <div
-            className="relative w-full max-w-5xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="rounded-2xl overflow-hidden relative w-full" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${activeVideo.key}?autoplay=1&controls=1&rel=0`}
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full border-none"
-              />
-            </div>
-            <button
-              onClick={() => setShowTrailer(false)}
-              className="absolute flex items-center justify-center transition-colors"
-              style={{
-                top: -16, right: -16,
-                width: 36, height: 36,
-                background: "rgba(255,255,255,0.1)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: "50%",
-                fontSize: "16px",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              ✕
-            </button>
           </div>
+          {/* end content wrapper */}
+
+          {/* ── Paywall Overlay (centered, professional) ─────────────── */}
+          {isLocked && <LoginOverlay />}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
