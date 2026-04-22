@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { onAuthStateChanged } from "firebase/auth";  // ← tambah ini
+import { auth } from "@/lib/firebase";               // ← sesuaikan path firebase client kamu
 import {
   getPopularMovies,
   searchMovies,
   getPopularMoviesWithTrailers,
   getMoviesByGenre,
   getNowPlayingMovies,
-  getTopRatedMovies, 
+  getTopRatedMovies,
   getUpcomingMovies,
 } from "@/services/movieService";
 import { Movie, MovieWithTrailer } from "@/types/movie";
@@ -18,8 +20,8 @@ import MovieGrid from "@/components/MovieGrid";
 import TrendingSection from "@/components/TrendingSection";
 import GenreFilter from "@/components/GenreFilter";
 import MovieDetailModal from "@/components/MovieDetailModal";
-import CarouselSection from "@/components/CarouselSection";  
-import GridSection from "@/components/GridSection"; 
+import CarouselSection from "@/components/CarouselSection";
+import GridSection from "@/components/GridSection";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -30,10 +32,21 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [heroIndex, setHeroIndex] = useState(0);
   const [fade, setFade] = useState(true);
-
-  // ── Baru ──
   const [selectedGenreId, setSelectedGenreId] = useState<number | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+
+  // ── Tambah state auth ──────────────────────────────────────────────────────
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authReady, setAuthReady] = useState(false); // tunggu Firebase selesai cek session
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+      setAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+  // ──────────────────────────────────────────────────────────────────────────
 
   const fetchMovies = useCallback(async (q = query, genreId = selectedGenreId) => {
     setLoading(true);
@@ -62,14 +75,12 @@ export default function Home() {
     });
   }, []);
 
-  // Genre change
   const handleGenreChange = (genreId: number | null) => {
     setSelectedGenreId(genreId);
     setQuery("");
     fetchMovies("", genreId);
   };
 
-  // Auto-rotate hero
   const heroMovies = movies.filter((m) => m.backdrop_path);
   useEffect(() => {
     if (heroMovies.length === 0) return;
@@ -100,19 +111,13 @@ export default function Home() {
         {activeTrailer && (
           <TrailerSection trailerMovies={trailerMovies} activeTrailer={activeTrailer} onSelect={setActiveTrailer} />
         )}
-
-        {/* Trending */}
         <TrendingSection onMovieClick={setSelectedMovie} />
-
-        {/* Now Playing — carousel */}
         <CarouselSection
           title="Now Playing"
           badge="In Theaters"
           fetchFn={getNowPlayingMovies}
           onMovieClick={setSelectedMovie}
         />
-
-        {/* Genre Filter + Popular Grid */}
         <GenreFilter selectedGenreId={selectedGenreId} onChange={handleGenreChange} />
         <MovieGrid
           movies={movies}
@@ -122,16 +127,12 @@ export default function Home() {
           onSearch={() => fetchMovies()}
           onMovieClick={setSelectedMovie}
         />
-
-        {/* Top Rated — grid */}
         <GridSection
           title="Top Rated"
           badge="All Time"
           fetchFn={getTopRatedMovies}
           onMovieClick={setSelectedMovie}
         />
-
-        {/* Upcoming — grid */}
         <GridSection
           title="Upcoming"
           badge="Coming Soon"
@@ -140,8 +141,16 @@ export default function Home() {
         />
       </main>
 
-      <MovieDetailModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
-        <Footer /> 
+      {/* ✅ Sekarang isLoggedIn dikirim ke modal */}
+      {authReady && (
+        <MovieDetailModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+          isLoggedIn={isLoggedIn}
+        />
+      )}
+
+      <Footer />
     </div>
   );
 }
