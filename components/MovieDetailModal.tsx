@@ -61,7 +61,7 @@ function incrementViewCount(): number {
   }
 }
 
-// ─── Login Overlay (centered paywall) ────────────────────────────────────────
+// ─── Login Overlay (paywall) ──────────────────────────────────────────────────
 
 function LoginOverlay() {
   return (
@@ -108,7 +108,10 @@ function LoginOverlay() {
           </Link>
           <p className="text-xs text-white/35">
             Belum punya akun?{" "}
-            <Link href="/auth?tab=register" className="text-white/55 underline underline-offset-2 hover:text-white/80 transition-colors">
+            <Link
+              href="/auth?tab=register"
+              className="text-white/55 underline underline-offset-2 hover:text-white/80 transition-colors"
+            >
               Daftar gratis
             </Link>
           </p>
@@ -130,8 +133,9 @@ export default function MovieDetailModal({
   const [loaded, setLoaded] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
-  // ── On movie open: check / increment view count ───────────────────────────
+  // ── View count + lock logic ───────────────────────────────────────────────
   useEffect(() => {
+    // Reset semua state saat modal ditutup
     if (!movie) {
       setDetail(null);
       setShowTrailer(false);
@@ -140,20 +144,30 @@ export default function MovieDetailModal({
       return;
     }
 
+    // ── LOGGED IN: langsung buka tanpa cek/increment view count ──
     if (isLoggedIn) {
       setIsLocked(false);
-    } else {
-      const currentCount = getViewCount();
-
-      if (currentCount >= MAX_FREE_VIEWS) {
-        setIsLocked(true);
-        setLoaded(true);
-        return;
-      }
-
-      const newCount = incrementViewCount();
-      setIsLocked(newCount > MAX_FREE_VIEWS);
+      setLoaded(false);
+      getMovieDetailFull(movie.id).then((data) => {
+        setDetail(data);
+        setTimeout(() => setLoaded(true), 50);
+      });
+      return; // ← wajib agar tidak lanjut ke blok guest
     }
+
+    // ── GUEST: cek kuota ──
+    const currentCount = getViewCount();
+
+    if (currentCount >= MAX_FREE_VIEWS) {
+      // Kuota habis → tampilkan paywall, tidak fetch detail
+      setIsLocked(true);
+      setLoaded(true);
+      return;
+    }
+
+    // Masih ada kuota → increment lalu fetch
+    const newCount = incrementViewCount();
+    setIsLocked(newCount > MAX_FREE_VIEWS);
 
     setLoaded(false);
     getMovieDetailFull(movie.id).then((data) => {
@@ -232,8 +246,7 @@ export default function MovieDetailModal({
                 <iframe
                   src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1`}
                   className="w-full h-full rounded-t-2xl"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
+                  allow="autoplay; encrypted-media; fullscreen"
                 />
               ) : (
                 <>
@@ -249,8 +262,7 @@ export default function MovieDetailModal({
                   <div
                     className="absolute inset-0 rounded-t-2xl"
                     style={{
-                      background:
-                        "linear-gradient(to top, #0d0f15 0%, transparent 60%)",
+                      background: "linear-gradient(to top, #0d0f15 0%, transparent 60%)",
                     }}
                   />
                   {trailer && (
@@ -284,8 +296,8 @@ export default function MovieDetailModal({
 
               {/* ── Top-right action buttons ── */}
               <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
-                {/* Free views remaining badge */}
-                {!isLoggedIn && viewsLeft <= 3 && (
+                {/* Free views remaining badge — hanya tampil jika guest & sisa ≤ 3 */}
+                {!isLoggedIn && viewsLeft <= 3 && viewsLeft > 0 && (
                   <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-yellow-400/35 text-yellow-400 backdrop-blur-md bg-black/55">
                     <svg
                       className="w-3 h-3"
@@ -406,9 +418,16 @@ export default function MovieDetailModal({
                   <h3 className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-2.5">
                     Cast
                   </h3>
-                  <div className="flex gap-2.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                  <div
+                    className="flex gap-2.5 overflow-x-auto pb-2"
+                    style={{ scrollbarWidth: "none" }}
+                  >
                     {cast.map((member) => (
-                      <div key={member.id} className="flex-shrink-0 text-center" style={{ width: 60 }}>
+                      <div
+                        key={member.id}
+                        className="flex-shrink-0 text-center"
+                        style={{ width: 60 }}
+                      >
                         <div className="w-12 h-12 rounded-full mx-auto overflow-hidden mb-1 border border-white/[0.08] bg-white/[0.06]">
                           {member.profile_path ? (
                             <img
@@ -440,7 +459,7 @@ export default function MovieDetailModal({
           </div>
           {/* end content wrapper */}
 
-          {/* ── Paywall Overlay (centered, professional) ─────────────── */}
+          {/* Paywall overlay */}
           {isLocked && <LoginOverlay />}
         </div>
       </div>

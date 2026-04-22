@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { onAuthStateChanged } from "firebase/auth";  // ← tambah ini
-import { auth } from "@/lib/firebase";               // ← sesuaikan path firebase client kamu
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import {
   getPopularMovies,
   searchMovies,
@@ -35,9 +35,9 @@ export default function Home() {
   const [selectedGenreId, setSelectedGenreId] = useState<number | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  // ── Tambah state auth ──────────────────────────────────────────────────────
+  // ── Auth state ─────────────────────────────────────────────────────────────
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authReady, setAuthReady] = useState(false); // tunggu Firebase selesai cek session
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -82,6 +82,7 @@ export default function Home() {
   };
 
   const heroMovies = movies.filter((m) => m.backdrop_path);
+
   useEffect(() => {
     if (heroMovies.length === 0) return;
     const interval = setInterval(() => {
@@ -105,11 +106,20 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#080a0f] text-white font-sans">
       <Header />
-      <HeroSection heroMovies={heroMovies} heroIndex={heroIndex} fade={fade} onDotClick={handleDotClick} />
+      <HeroSection
+        heroMovies={heroMovies}
+        heroIndex={heroIndex}
+        fade={fade}
+        onDotClick={handleDotClick}
+      />
 
       <main className="relative z-10 max-w-[1400px] mx-auto px-10 pb-20">
         {activeTrailer && (
-          <TrailerSection trailerMovies={trailerMovies} activeTrailer={activeTrailer} onSelect={setActiveTrailer} />
+          <TrailerSection
+            trailerMovies={trailerMovies}
+            activeTrailer={activeTrailer}
+            onSelect={setActiveTrailer}
+          />
         )}
         <TrendingSection onMovieClick={setSelectedMovie} />
         <CarouselSection
@@ -141,14 +151,16 @@ export default function Home() {
         />
       </main>
 
-      {/* ✅ Sekarang isLoggedIn dikirim ke modal */}
-      {authReady && (
-        <MovieDetailModal
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-          isLoggedIn={isLoggedIn}
-        />
-      )}
+      {/*
+        Modal SELALU dirender — tidak dibungkus authReady
+        agar tidak unmount/remount saat Firebase selesai cek session.
+        isLoggedIn dikirim setelah authReady agar tidak false positif.
+      */}
+      <MovieDetailModal
+        movie={selectedMovie}
+        onClose={() => setSelectedMovie(null)}
+        isLoggedIn={authReady ? isLoggedIn : false}
+      />
 
       <Footer />
     </div>

@@ -8,30 +8,30 @@ type Movie = {
 };
 
 const SERVERS = [
-  { id: "vidsrc-me",    label: "VidSrc",     getUrl: (id: number) => `https://vidsrc.me/embed/movie/${id}` },
-  { id: "vidsrc-to",    label: "VidSrc 2",   getUrl: (id: number) => `https://vidsrc.to/embed/movie/${id}` },
-  { id: "2embed",       label: "2Embed",     getUrl: (id: number) => `https://www.2embed.cc/embed/${id}` },
-  { id: "superembed",   label: "SuperEmbed", getUrl: (id: number) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
-  { id: "embedsoap",    label: "EmbedSoap",  getUrl: (id: number) => `https://www.embedsoap.com/embed/movie/?id=${id}` },
-  { id: "autoembed",    label: "AutoEmbed",  getUrl: (id: number) => `https://autoembed.co/movie/tmdb/${id}` },
-  { id: "smashystream", label: "Smashy",     getUrl: (id: number) => `https://player.smashy.stream/movie/${id}` },
-  { id: "moviesapi",    label: "MoviesAPI",  getUrl: (id: number) => `https://moviesapi.club/movie/${id}` },
+  { id: "vidsrc-me", label: "VidSrc", getUrl: (id: number) => `https://vidsrc.me/embed/movie/${id}` },
+  { id: "vidsrc-to", label: "VidSrc 2", getUrl: (id: number) => `https://vidsrc.to/embed/movie/${id}` },
+  { id: "2embed", label: "2Embed", getUrl: (id: number) => `https://www.2embed.cc/embed/${id}` },
+  { id: "superembed", label: "SuperEmbed", getUrl: (id: number) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
+  { id: "embedsoap", label: "EmbedSoap", getUrl: (id: number) => `https://www.embedsoap.com/embed/movie/?id=${id}` },
+  { id: "autoembed", label: "AutoEmbed", getUrl: (id: number) => `https://autoembed.co/movie/tmdb/${id}` },
+  { id: "smashystream", label: "Smashy", getUrl: (id: number) => `https://player.smashy.stream/movie/${id}` },
+  { id: "moviesapi", label: "MoviesAPI", getUrl: (id: number) => `https://moviesapi.club/movie/${id}` },
 ];
 
 type ServerStatus = "idle" | "loading" | "ok" | "error";
 
 function StatusDot({ status }: { status: ServerStatus }) {
   const colors: Record<ServerStatus, string> = {
-    idle:    "rgba(255,255,255,0.18)",
+    idle: "rgba(255,255,255,0.18)",
     loading: "#f59e0b",
-    ok:      "#22c55e",
-    error:   "#ef4444",
+    ok: "#22c55e",
+    error: "#ef4444",
   };
   const glow: Record<ServerStatus, string> = {
-    idle:    "none",
+    idle: "none",
     loading: "0 0 6px #f59e0b",
-    ok:      "0 0 6px #22c55e",
-    error:   "0 0 6px #ef4444",
+    ok: "0 0 6px #22c55e",
+    error: "0 0 6px #ef4444",
   };
   return (
     <span
@@ -246,13 +246,13 @@ export default function WatchSection({ movie }: { movie: Movie }) {
                 background: isActive
                   ? "rgba(239,68,68,0.15)"
                   : status === "error"
-                  ? "rgba(255,255,255,0.03)"
-                  : "rgba(255,255,255,0.06)",
+                    ? "rgba(255,255,255,0.03)"
+                    : "rgba(255,255,255,0.06)",
                 color: isActive
                   ? "#ef4444"
                   : status === "error"
-                  ? "rgba(255,255,255,0.25)"
-                  : "rgba(255,255,255,0.6)",
+                    ? "rgba(255,255,255,0.25)"
+                    : "rgba(255,255,255,0.6)",
                 cursor: "pointer",
                 textDecoration: status === "error" ? "line-through" : "none",
               }}
@@ -333,7 +333,6 @@ export default function WatchSection({ movie }: { movie: Movie }) {
           <iframe
             key={iframeKey}
             src={activeServer.getUrl(movie.id)}
-            allowFullScreen
             allow="autoplay; fullscreen; picture-in-picture; accelerometer; gyroscope; clipboard-write; encrypted-media"
             onLoad={handleLoad}
             style={{
