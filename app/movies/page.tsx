@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import GridSection from "@/components/GridSection";
@@ -75,9 +77,6 @@ const SORT_OPTIONS = [
   },
 ];
 
-/* ─────────────────────────────────────────────
-   FilterIcon – hamburger used on mobile toolbar
-───────────────────────────────────────────── */
 function FilterIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -88,9 +87,6 @@ function FilterIcon() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   SidebarContent – shared between desktop sidebar & mobile sheet
-───────────────────────────────────────────── */
 function SidebarContent({
   activeSort,
   setActiveSort,
@@ -108,7 +104,6 @@ function SidebarContent({
 }) {
   return (
     <div className="flex flex-col h-full">
-      {/* Sort Section */}
       <div className="pt-5 pb-2">
         <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-white/20 px-5 mb-2">
           Urutkan
@@ -141,7 +136,6 @@ function SidebarContent({
 
       <div className="mx-5 my-1 h-px bg-white/[0.05]" />
 
-      {/* Genre Section */}
       <div className="pt-3 pb-2">
         <div className="flex items-center justify-between px-5 mb-3">
           <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-white/20">
@@ -175,7 +169,6 @@ function SidebarContent({
 
       <div className="mx-5 my-1 h-px bg-white/[0.05]" />
 
-      {/* Library Section */}
       <div className="pt-3 pb-4">
         <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-white/20 px-5 mb-2">
           Library
@@ -219,9 +212,6 @@ function SidebarContent({
   );
 }
 
-/* ─────────────────────────────────────────────
-   MobileFilterSheet – bottom sheet for mobile
-───────────────────────────────────────────── */
 function MobileFilterSheet({
   open,
   onClose,
@@ -235,7 +225,6 @@ function MobileFilterSheet({
   toggleGenre: (id: number) => void;
   setActiveGenres: (g: number[]) => void;
 }) {
-  // Lock body scroll when open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -245,22 +234,18 @@ function MobileFilterSheet({
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      {/* Sheet */}
       <div
         className={`fixed bottom-0 left-0 right-0 z-50 bg-[#0d1017] border-t border-white/10 rounded-t-2xl overflow-y-auto max-h-[80dvh]
           transition-transform duration-300 ease-out ${open ? "translate-y-0" : "translate-y-full"}`}
       >
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-white/20" />
         </div>
         <SidebarContent {...props} onClose={onClose} />
-        {/* Bottom safe area */}
         <div className="h-6" />
       </div>
     </>
@@ -277,6 +262,19 @@ export default function MoviesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // ── Firebase auth state ──────────────────────────────────────
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+  // ────────────────────────────────────────────────────────────
 
   const toggleGenre = (id: number) => {
     setActiveGenres((prev) =>
@@ -307,13 +305,10 @@ export default function MoviesPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#080a0f] text-white">
 
-      {/* ── HEADER ── */}
       <Header />
 
-      {/* ── BODY ── */}
       <div className="flex flex-1 mt-0">
 
-        {/* ── DESKTOP SIDEBAR (hidden on mobile/tablet) ── */}
         <aside className="hidden lg:flex w-52 shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto border-r border-white/[0.06] bg-[#0d1017] flex-col">
           <SidebarContent
             activeSort={activeSort}
@@ -324,11 +319,9 @@ export default function MoviesPage() {
           />
         </aside>
 
-        {/* ── CONTENT ── */}
         <div className="flex flex-col flex-1 min-w-0">
           <div className="flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
 
-            {/* Page heading + Search */}
             <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-mono text-red-400 tracking-widest uppercase mb-1">
@@ -344,10 +337,7 @@ export default function MoviesPage() {
                 </p>
               </div>
 
-              {/* Search + mobile filter button row */}
               <div className="flex items-center gap-2 w-full sm:w-auto">
-
-                {/* Mobile: Filter button (visible < lg) */}
                 <button
                   onClick={() => setMobileFilterOpen(true)}
                   className="lg:hidden relative flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.06] border border-white/10 text-sm text-white/60 hover:text-white hover:bg-white/[0.09] transition-all shrink-0"
@@ -361,7 +351,6 @@ export default function MoviesPage() {
                   )}
                 </button>
 
-                {/* Search Form */}
                 <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1 sm:flex-none">
                   <div className="relative flex-1 sm:flex-none">
                     <svg
@@ -400,16 +389,13 @@ export default function MoviesPage() {
               </div>
             </div>
 
-            {/* Active filters pill strip (mobile/tablet) */}
             {(activeGenres.length > 0 || activeSort !== "popular") && (
               <div className="lg:hidden flex flex-wrap gap-1.5 mb-5">
-                {/* Sort pill */}
                 {activeSort !== "popular" && (
                   <span className="inline-flex items-center gap-1 text-[10.5px] px-2.5 py-1 rounded-full bg-white/[0.07] border border-white/10 text-white/60">
                     {currentSort.label}
                   </span>
                 )}
-                {/* Genre pills */}
                 {activeGenres.map((id) => {
                   const g = GENRES.find((x) => x.id === id)!;
                   return (
@@ -447,12 +433,10 @@ export default function MoviesPage() {
             />
           </div>
 
-          {/* ── FOOTER ── */}
           <Footer />
         </div>
       </div>
 
-      {/* ── MOBILE BOTTOM SHEET FILTER ── */}
       <MobileFilterSheet
         open={mobileFilterOpen}
         onClose={() => setMobileFilterOpen(false)}
@@ -463,11 +447,12 @@ export default function MoviesPage() {
         setActiveGenres={setActiveGenres}
       />
 
-      {/* Modal */}
-      {selectedMovie && (
+      {/* Modal — menunggu auth selesai loading sebelum render */}
+      {selectedMovie && !authLoading && (
         <MovieDetailModal
           movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
+          isLoggedIn={!!currentUser}
         />
       )}
     </div>

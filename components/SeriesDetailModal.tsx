@@ -217,7 +217,7 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
   const [expandedEp, setExpandedEp] = useState<number | null>(null);
   const [isLocked, setIsLocked] = useState(false);
 
-  // Auth
+  // Auth — source of truth dari Firebase, bukan prop isLoggedIn
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [gateOpen, setGateOpen] = useState(false);
@@ -232,7 +232,6 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
   }, []);
 
   // ── On series open: check / increment view count ──────────────────────────
-  // Konsisten dengan MovieDetailModal: locked skip fetch, badge pakai isLoggedIn
   useEffect(() => {
     if (!movie) {
       setDetail(null);
@@ -241,21 +240,37 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
       return;
     }
 
-    if (isLoggedIn) {
+    // Tunggu auth state selesai resolve dulu sebelum cek kuota
+    if (authLoading) return;
+
+    // ── LOGGED IN: langsung buka tanpa cek/increment view count ──
+    // Pakai `user` dari Firebase (bukan prop isLoggedIn) sebagai source of truth
+    if (user) {
       setIsLocked(false);
-    } else {
-      const currentCount = getViewCount();
-
-      if (currentCount >= MAX_FREE_VIEWS) {
-        // Sama seperti MovieDetailModal: langsung set locked, skip fetch
-        setIsLocked(true);
-        setLoaded(true);
-        return;
-      }
-
-      const newCount = incrementViewCount();
-      setIsLocked(newCount > MAX_FREE_VIEWS);
+      setLoaded(false);
+      getSeriesDetails(movie.id).then((data) => {
+        setDetail(data);
+        const firstReal = data.seasons?.find((s) => s.season_number > 0);
+        const startSeason = firstReal?.season_number ?? 1;
+        setActiveSeason(startSeason);
+        setTimeout(() => setLoaded(true), 50);
+      });
+      return;
     }
+
+    // ── GUEST: cek kuota ──
+    const currentCount = getViewCount();
+
+    if (currentCount >= MAX_FREE_VIEWS) {
+      // Kuota habis → tampilkan paywall, tidak fetch detail
+      setIsLocked(true);
+      setLoaded(true);
+      return;
+    }
+
+    // Masih ada kuota → increment lalu fetch
+    incrementViewCount();
+    setIsLocked(false);
 
     setLoaded(false);
     getSeriesDetails(movie.id).then((data) => {
@@ -265,7 +280,7 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
       setActiveSeason(startSeason);
       setTimeout(() => setLoaded(true), 50);
     });
-  }, [movie, isLoggedIn]);
+  }, [movie, user, authLoading]); // ← dependency: user & authLoading, bukan isLoggedIn
 
   useEffect(() => {
     if (!movie || !activeSeason) return;
@@ -307,9 +322,8 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
 
   const realSeasons = (detail?.seasons ?? []).filter((s) => s.season_number > 0);
 
-  // ── Konsisten dengan MovieDetailModal: viewsLeft pakai isLoggedIn, badge
-  //    muncul saat !isLoggedIn && viewsLeft <= 3 (tanpa cek !isLocked / > 0)
-  const viewsUsed = isLoggedIn ? 0 : getViewCount();
+  // viewsLeft dihitung dari guest state saja
+  const viewsUsed = user ? 0 : getViewCount();
   const viewsLeft = Math.max(0, MAX_FREE_VIEWS - viewsUsed);
 
   function requireAuth(feature: "watch" | "details", action: () => void) {
@@ -389,8 +403,8 @@ export default function SeriesDetailModal({ movie, onClose, isLoggedIn = false }
 
               {/* Top-right action buttons */}
               <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
-                {/* Free views remaining badge — konsisten: !isLoggedIn && viewsLeft <= 3 */}
-                {!isLoggedIn && viewsLeft <= 3 && (
+                {/* Free views remaining badge — hanya tampil jika guest & sisa ≤ 3 & sisa > 0 */}
+                {!user && viewsLeft <= 3 && viewsLeft > 0 && (
                   <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-yellow-400/35 text-yellow-400 backdrop-blur-md bg-black/55">
                     <svg
                       className="w-3 h-3"
